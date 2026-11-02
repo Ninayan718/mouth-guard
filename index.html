@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>管住嘴</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F6E56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="管住嘴">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+--bg:#FAFAF8;--card:#FFFFFF;--line:#E8E6E0;--tx:#1F1F1D;--tx2:#6B6A64;--tx3:#9B9A93;
+--ac:#0F6E56;--ac-soft:#E1F5EE;--warn:#A32D2D;--warn-soft:#FCEBEB;--amber:#854F0B;
+}
+body.night{--bg:#161615;--card:#222220;--line:#333330;--tx:#F0EFEA;--tx2:#A5A49C;--tx3:#77766F;--ac-soft:#12332B;--warn-soft:#3A1E1E}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",system-ui,sans-serif;
+line-height:1.6;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:460px;margin:0 auto;padding:20px 18px 40px}
+h1{font-size:22px;font-weight:600;letter-spacing:.5px}
+h2{font-size:15px;font-weight:600;margin-bottom:10px}
+.sub{font-size:13px;color:var(--tx2)}
+.tiny{font-size:12px;color:var(--tx3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.row{display:flex;align-items:center;justify-content:space-between}
+.view{display:none}.view.on{display:block}
+
+.bigbtn{width:190px;height:190px;border-radius:50%;border:none;background:var(--ac);color:#fff;
+font-size:20px;font-weight:600;letter-spacing:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+margin:26px auto;box-shadow:0 6px 20px rgba(15,110,86,.18);cursor:pointer;font-family:inherit}
+.bigbtn span{display:block;font-size:12px;font-weight:400;opacity:.8;margin-top:6px;letter-spacing:0}
+.bigbtn:active{transform:scale(.97)}
+
+.btn{border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:12px;padding:13px 16px;font-size:15px;
+cursor:pointer;font-family:inherit;width:100%}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:500}
+.btn.ghost{color:var(--tx2)}
+.btn:active{opacity:.75}
+.btn2{display:flex;gap:10px}
+.btn2 .btn{flex:1}
+
+.ring{width:180px;height:180px;border-radius:50%;margin:22px auto;display:flex;align-items:center;justify-content:center;
+background:conic-gradient(var(--ac) calc(var(--p,0) * 1%), var(--line) 0);position:relative}
+.ring::after{content:"";position:absolute;inset:10px;border-radius:50%;background:var(--bg)}
+.ring .num{position:relative;z-index:1;font-size:44px;font-weight:600;font-variant-numeric:tabular-nums}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--tx2);cursor:pointer;font-family:inherit}
+.chip.sel{background:var(--ac-soft);border-color:var(--ac);color:var(--ac);font-weight:500}
+
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--ac);border-radius:99px;transition:width .3s}
+.stat{display:flex;gap:10px}
+.stat .card{flex:1;margin-bottom:0;text-align:center;padding:14px 8px}
+.stat b{display:block;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat em{font-style:normal;font-size:11px;color:var(--tx3)}
+
+.hb{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px}
+.hb .lb{width:52px;flex:none;color:var(--tx2);font-size:12px}
+.hb .tr{flex:1;height:20px;background:var(--line);border-radius:5px;overflow:hidden}
+.hb .tr>i{display:block;height:100%;background:var(--warn);border-radius:5px}
+.hb .vv{width:34px;text-align:right;color:var(--tx2);font-size:12px;font-variant-numeric:tabular-nums}
+
+input,select{width:100%;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:10px;
+padding:11px 12px;font-size:15px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--ac)}
+label.f{display:block;font-size:12px;color:var(--tx2);margin:12px 0 5px}
+.nav{display:flex;gap:8px;margin-bottom:14px}
+.nav button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--tx2);border-radius:10px;padding:9px;
+font-size:13px;cursor:pointer;font-family:inherit}
+.nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.cost{font-size:26px;font-weight:600;color:var(--warn);font-variant-numeric:tabular-nums}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;background:var(--tx);color:var(--bg);
+padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
+.toast.on{opacity:.95}
+.note{background:var(--warn-soft);border:1px solid var(--warn);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--warn);margin-bottom:14px}
+.ok{background:var(--ac-soft);border-color:var(--ac);color:var(--ac)}
+.sep{height:1px;background:var(--line);margin:16px 0}
+.btn:disabled{opacity:.4}
+.step{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.step .nm{flex:1}
+.step .kc{color:var(--tx2);font-size:12px;font-variant-numeric:tabular-nums;text-align:right}
+.step .sv{color:var(--ac);font-weight:500}
+.srow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.srow button{border:none;background:none;color:var(--warn);font-size:13px;cursor:pointer;font-family:inherit;padding:0 2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="v-home" class="view on">
+  <div class="row" style="margin-bottom:6px">
+    <h1>管住嘴</h1>
+    <div class="tiny" id="clock"></div>
+  </div>
+  <div id="nightNote"></div>
+
+  <div class="card">
+    <div class="row"><span class="sub">今日额度</span><span class="sub" id="quotaTxt"></span></div>
+    <div class="bar"><i id="quotaBar"></i></div>
+    <div class="tiny" style="margin-top:8px" id="quotaHint"></div>
+  </div>
+
+  <button class="bigbtn" onclick="startCrave()">我又想吃了<span>先等 90 秒</span></button>
+
+  <button class="btn" onclick="startBuy()">我想买 / 想下单<span style="font-size:12px;color:var(--tx3)"> — 先冷静 3 分钟</span></button>
+
+  <div class="card" id="stockCard" style="margin-top:14px"></div>
+
+  <div class="stat">
+    <div class="card"><b id="sStreak">0</b><em>连续未超支</em></div>
+    <div class="card"><b id="sRate">—</b><em>近 7 天撑过率</em></div>
+    <div class="card"><b id="sMin">0</b><em>今日代价(分钟)</em></div>
+  </div>
+
+  <div class="card" style="margin-top:14px" id="recent"></div>
+</div>
+
+<div id="v-wait" class="view">
+  <div class="sub" style="text-align:center;margin-top:6px">撑住这 90 秒,冲动会自己退潮</div>
+  <div class="ring"><div class="num" id="cdNum">90</div></div>
+  <div class="card">
+    <h2>如果现在只能吃一个苹果,你还想吃吗?</h2>
+    <div class="btn2">
+      <button class="btn" id="h1" onclick="setHunger(true)">想吃,是真饿</button>
+      <button class="btn" id="h2" onclick="setHunger(false)">不想,是嘴馋</button>
+    </div>
+    <div class="tiny" style="margin-top:10px" id="hungerTip">先回答这个问题,再继续等</div>
+  </div>
+  <div class="card" id="waitFacts"></div>
+  <button class="btn ghost" onclick="giveUp()">等不下去了,我吃了</button>
+</div>
+
+<div id="v-result" class="view">
+  <h1 style="margin:10px 0 4px">时间到</h1>
+  <div class="sub" id="resultSub"></div>
+  <div style="margin-top:24px">
+    <button class="btn pri" style="margin-bottom:10px" onclick="resisted()">撑过去了</button>
+    <button class="btn" onclick="toLog()">还是吃了</button>
+  </div>
+  <div class="card" style="margin-top:20px" id="resultFacts"></div>
+</div>
+
+<div id="v-log" class="view">
+  <h1 style="margin:10px 0 4px">吃了什么</h1>
+  <div class="sub">选一下,看看这口的代价</div>
+  <div class="card" style="margin-top:14px">
+    <h2>常见选项</h2>
+    <div class="chips" id="foodChips"></div>
+    <label class="f">自定义(名称 + 热量 kcal)</label>
+    <div class="btn2">
+      <input id="cfName" placeholder="比如 蛋挞" style="flex:2">
+      <input id="cfKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
+    </div>
+    <button class="btn" style="margin-top:10px" onclick="useCustom()">用这个</button>
+  </div>
+  <div class="card">
+    <div class="row"><span class="sub">代价</span><span class="cost" id="costTxt">—</span></div>
+    <div class="tiny" id="costSub">相当于快走这么久才能抵消</div>
+  </div>
+  <div class="card">
+    <h2>当时是什么情绪</h2>
+    <div class="chips" id="emoChips"></div>
+  </div>
+  <button class="btn pri" onclick="saveEaten()">记下来</button>
+  <button class="btn ghost" style="margin-top:10px" onclick="go('home')">算了,不记</button>
+</div>
+
+<div id="v-stats" class="view">
+  <h1 style="margin-bottom:12px">复盘</h1>
+  <div class="stat" style="margin-bottom:14px">
+    <div class="card"><b id="tTotal">0</b><em>总想吃次数</em></div>
+    <div class="card"><b id="tEat">0</b><em>真吃了</em></div>
+    <div class="card"><b id="tNight">0</b><em>深夜破功</em></div>
+    <div class="card"><b id="tSkip">0</b><em>省下购买</em></div>
+  </div>
+  <div class="card">
+    <h2>破功集中在哪个时段</h2>
+    <div id="hourBars"></div>
+  </div>
+  <div class="card">
+    <h2>破功时的情绪</h2>
+    <div id="emoBars"></div>
+  </div>
+  <div class="card ok" id="insight"></div>
+  <div class="card">
+    <h2>设置</h2>
+    <label class="f">每日额度(次)</label>
+    <input id="setQuota" type="number" inputmode="numeric" min="0" max="10">
+    <label class="f">体重(kg),用于代价换算</label>
+    <input id="setWeight" type="number" inputmode="numeric" min="30" max="150">
+    <button class="btn pri" style="margin-top:14px" onclick="saveSettings()">保存设置</button>
+    <div class="sep"></div>
+    <button class="btn ghost" onclick="exportData()">导出数据(JSON)</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="wipe()">清空所有记录</button>
+  </div>
+</div>
+
+<div id="v-buy" class="view">
+  <div class="sub" style="text-align:center;margin-top:6px">等 3 分钟。买回来的东西,你要连着对抗好几天</div>
+  <div class="ring" id="buyRing"><div class="num" id="buyNum">3:00</div></div>
+  <div class="card">
+    <h2>真要喝的话,至少降一级</h2>
+    <div id="ladder"></div>
+    <div class="tiny" style="margin-top:10px">戒断很难,降级很容易。挑一个你现在能接受的。</div>
+  </div>
+  <div class="card">
+    <h2>为什么买比吃更关键</h2>
+    <div class="sub">一包薯片 380 kcal,你不会一次吃完。真正的问题是:它待在家里的每一天,你都要重新跟它较劲一次。管住「买」,后面每一天都变轻松。</div>
+  </div>
+  <button class="btn pri" id="buyGoBtn" disabled onclick="bought()">再等 3 分钟</button>
+  <button class="btn ghost" style="margin-top:10px" onclick="skippedBuy()">算了,不买了</button>
+</div>
+
+<div id="v-stock" class="view">
+  <h1 style="margin-bottom:4px">家里现在有什么</h1>
+  <div class="sub">登记一次就行。这个数字往下走,你的日子会好过很多。</div>
+  <div class="card" style="margin-top:14px">
+    <div class="btn2">
+      <input id="stName" placeholder="比如 薯片、饼干、可乐" style="flex:2">
+      <button class="btn pri" style="flex:1" onclick="addStock()">添加</button>
+    </div>
+    <div id="stockList" style="margin-top:12px"></div>
+  </div>
+  <div class="card ok">
+    <div class="sub">挑一样今天就能做的:把零食挪到最高层柜子、扔掉过期的一半、下次买之前先回来看一眼这个数字。</div>
+  </div>
+  <button class="btn" onclick="navTo('home')">回到首页</button>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var KEY='mouthguard.v1';
+var DEF={dailyQuota:2,weightKg:60};
+var FOODS=[
+ {n:'奶茶(中杯全糖)',k:350},{n:'奶茶(少糖)',k:260},{n:'可乐 500ml',k:210},{n:'果汁',k:180},
+ {n:'薯片一包',k:380},{n:'巧克力',k:270},{n:'蛋糕一块',k:300},{n:'饼干两片',k:100},
+ {n:'坚果一把',k:180},{n:'冰淇淋',k:250},{n:'炸鸡一块',k:250},{n:'手抓饼',k:400},
+ {n:'面包一个',k:280},{n:'糖果',k:100},{n:'泡面',k:450},{n:'烧烤一串',k:120}
+];
+var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
+var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
+var LADDER=[{n:'全糖奶茶',k:350},{n:'少糖奶茶',k:260},{n:'无糖 / 纯茶',k:30},{n:'美式咖啡',k:15}];
+var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0;
+
+function load(){
+  var raw=null; try{raw=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  S=raw&&raw.events?raw:{settings:{},events:[],best:0};
+  S.settings=Object.assign({},DEF,S.settings||{});
+  if(!S.events)S.events=[]; if(!S.best)S.best=0;
+  if(!Array.isArray(S.settings.stock))S.settings.stock=[];
+}
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
+
+function dkey(t){var d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function p2(n){return n<10?'0'+n:''+n}
+function todayEaten(){var k=dkey(Date.now());return S.events.filter(function(e){return e.outcome==='eaten'&&dkey(e.ts)===k}).length}
+function isNight(t){var h=new Date(t).getHours();return h>=21||h<6}
+function kcalPerMin(){return S.settings.weightKg*0.067}
+function slotOf(t){
+  var h=new Date(t).getHours();
+  for(var i=0;i<SLOTS.length;i++){var s=SLOTS[i];
+    if(s[1]<s[2]){if(h>=s[1]&&h<s[2])return s[0]} else {if(h>=s[1]||h<s[2])return s[0]}}
+  return '其他';
+}
+function streak(){
+  if(!S.events.length)return 0;
+  var by={};
+  S.events.forEach(function(e){if(e.outcome==='eaten'){var k=dkey(e.ts);by[k]=(by[k]||0)+1}});
+  var q=S.settings.dailyQuota,n=0,d=new Date();d.setHours(0,0,0,0);
+  var first=new Date(Math.min.apply(null,S.events.map(function(e){return e.ts})));first.setHours(0,0,0,0);
+  var today=dkey(Date.now());
+  while(d.getTime()>=first.getTime()){
+    var k=dkey(d.getTime());
+    if((by[k]||0)>q){ if(k===today){d.setDate(d.getDate()-1);continue} break }
+    n++; d.setDate(d.getDate()-1);
+  }
+  if(n>S.best){S.best=n}
+  return n;
+}
+
+function go(v){
+  document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
+  document.getElementById('v-'+v).classList.add('on');
+  window.scrollTo(0,0);
+}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('on')},2200)}
+
+function render(){
+  document.body.classList.toggle('night',isNight(Date.now()));
+  var n=isNight(Date.now());
+  document.getElementById('clock').textContent=n?'夜间模式':'今天';
+  var nn=document.getElementById('nightNote');
+  if(n){
+    var all=S.events.filter(function(e){return isNight(e.ts)});
+    var bad=all.filter(function(e){return e.outcome==='eaten'}).length;
+    var r=all.length?Math.round(bad/all.length*100):0;
+    nn.innerHTML='<div class="note">现在是深夜,你的判断力处在全天最低点。历史上这个时段你破功了 '+r+'%。'+
+      '睡前的东西不会消失,明早想吃再吃。</div>';
+  } else nn.innerHTML='';
+
+  var used=todayEaten(),q=S.settings.dailyQuota,left=Math.max(0,q-used);
+  document.getElementById('quotaTxt').textContent=left+' / '+q+' 次可用';
+  document.getElementById('quotaBar').style.width=(q?Math.min(100,left/q*100):0)+'%';
+  document.getElementById('quotaHint').textContent=used>q
+    ? '今天已经超支 '+ (used-q) +' 次了,明天重新开始就好,别破罐破摔'
+    : (used? '已经用了 '+used+' 次':'一次都没用,很稳');
+
+  document.getElementById('sStreak').textContent=streak();
+  var w=Date.now()-7*864e5, r7=S.events.filter(function(e){return e.ts>w});
+  var res=r7.filter(function(e){return e.outcome==='resisted'}).length;
+  document.getElementById('sRate').textContent=r7.length?Math.round(res/r7.length*100)+'%':'—';
+  var mins=0; S.events.filter(function(e){return e.outcome==='eaten'&&dkey(e.ts)===dkey(Date.now())})
+    .forEach(function(e){mins+=Math.round((e.kcal||0)/kcalPerMin())});
+  document.getElementById('sMin').textContent=mins;
+
+  var rc=S.events.slice().reverse().slice(0,5),h='';
+  if(!rc.length){h='<div class="sub">还没有记录。下次想吃的时候,先回来点一下那个按钮。</div>'}
+  else{
+    h='<h2>最近五次</h2>';
+    rc.forEach(function(e){
+      var d=new Date(e.ts),tm=p2(d.getHours())+':'+p2(d.getMinutes());
+      var ok=e.outcome==='resisted';
+      h+='<div class="row" style="padding:7px 0;border-top:1px solid var(--line)">'+
+        '<span style="font-size:13px">'+tm+' · '+(ok?'<span style="color:var(--ac)">撑住了</span>':'<span style="color:var(--warn)">'+(e.item||'吃了')+'</span>')+
+        (e.emo?' <span class="tiny">'+e.emo+'</span>':'')+'</span>'+
+        '<span class="tiny">'+(ok?'等了 '+e.waitedSec+'s':'+'+Math.round((e.kcal||0)/kcalPerMin())+'分钟')+'</span></div>';
+    });
+  }
+  document.getElementById('recent').innerHTML=h;
+
+  var cf=document.getElementById('foodChips');
+  if(!cf.dataset.done){cf.dataset.done=1;cf.innerHTML=FOODS.map(function(f){
+    return '<button class="chip" data-k="'+f.k+'" onclick="pickFood(this,'+f.k+')">'+f.n+'</button>'}).join('')}
+  var ce=document.getElementById('emoChips');
+  if(!ce.dataset.done){ce.dataset.done=1;ce.innerHTML=EMOS.map(function(x){
+    return '<button class="chip" onclick="pickEmo(this,\''+x+'\')">'+x+'</button>'}).join('')}
+
+  var st=S.settings.stock;
+  document.getElementById('stockCard').innerHTML=
+    '<div class="row"><span class="sub">家里存货</span>'+
+    '<span class="sub" style="color:'+(st.length?'var(--warn)':'var(--ac)')+'">'+st.length+' 样</span></div>'+
+    '<div class="tiny" style="margin-top:6px">'+(st.length
+      ? '这些是你每天都要重新跟它较劲的东西。少一样,轻松一点。'
+      : '空着最好。下次想买的时候,先回来看一眼这个数字。')+'</div>'+
+    '<button class="btn ghost" style="margin-top:10px" onclick="go(\'stock\');renderStock()">登记 / 管理</button>';
+}
+
+function startCrave(){
+  S.pending={start:Date.now(),hunger:null}; save();
+  go('wait'); runTimer();
+}
+function runTimer(){
+  clearInterval(timer);
+  var p=S.pending; if(!p)return;
+  timer=setInterval(function(){
+    var left=90-Math.floor((Date.now()-p.start)/1000);
+    if(left<=0){clearInterval(timer);toResult();return}
+    document.getElementById('cdNum').textContent=left;
+    document.querySelector('.ring').style.setProperty('--p',Math.round((90-left)/90*100));
+    var f=document.getElementById('waitFacts');
+    f.innerHTML='<div class="sub">'+waitLine()+'</div>';
+  },250);
+  var f=document.getElementById('waitFacts');
+  f.innerHTML='<div class="sub">'+waitLine()+'</div>';
+}
+function waitLine(){
+  var all=S.events.filter(function(e){return e.outcome!==undefined});
+  var res=all.filter(function(e){return e.outcome==='resisted'}).length;
+  var rate=all.length?Math.round(res/all.length*100):0;
+  var h=isNight(Date.now())?'深夜是最容易破功的时段。':'';
+  return h+'你历史上撑过去的概率是 '+rate+'%(共 '+all.length+' 次)。'+'渴求感通常在 10 到 20 分钟内自己退掉。';
+}
+function setHunger(v){
+  S.pending.hunger=v; save();
+  document.getElementById('h1').classList.toggle('sel',v===true);
+  document.getElementById('h2').classList.toggle('sel',v===false);
+  document.getElementById('hungerTip').textContent=v
+    ? '是真饿的话,吃是可以的 —— 但吃正经东西,别顺手抓零食。'
+    : '既然不是饿,那就是情绪在要东西吃。再等一会儿就好。';
+}
+function toResult(){ go('result');
+  var p=S.pending||{hunger:null};
+  document.getElementById('resultSub').textContent=p.hunger===null
+    ? '你没回答刚才那个问题,也没关系。'
+    : (p.hunger?'你说你是真饿 —— 真饿就吃点正经东西。':'你说你不饿 —— 那这一口完全可以不要。');
+  var used=todayEaten(),q=S.settings.dailyQuota;
+  document.getElementById('resultFacts').innerHTML=
+    '<div class="sub">今天已用 '+used+' / '+q+' 次额度。'+(used>=q?'额度已经用完,再吃就是超支了。':'还剩 '+(q-used)+' 次。')+'</div>';
+}
+function resisted(){
+  clearInterval(timer);
+  var p=S.pending||{};
+  S.events.push({ts:Date.now(),outcome:'resisted',waitedSec:Math.min(90,Math.round((Date.now()-(p.start||Date.now()))/1000)),
+    realHunger:p.hunger,isNight:isNight(Date.now()),slot:slotOf(Date.now())});
+  S.pending=null; save(); go('home'); render(); toast('又赢一次');
+}
+function giveUp(){ clearInterval(timer); toLog(); }
+function toLog(viaBuy){ clearInterval(timer); pick={food:null,kcal:0,emo:'',viaBuy:!!viaBuy}; go('log');
+  document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
+  document.querySelectorAll('#emoChips .chip').forEach(function(c){c.classList.remove('sel')});
+  document.getElementById('costTxt').textContent='—';
+  document.getElementById('cfName').value='';document.getElementById('cfKcal').value='';
+}
+function startBuy(){
+  go('buy'); buyStart=Date.now(); clearInterval(buyTimer);
+  var b=document.getElementById('buyGoBtn'); b.disabled=true; b.textContent='再等 3 分钟';
+  document.getElementById('buyNum').textContent='3:00';
+  document.getElementById('buyRing').style.setProperty('--p',0);
+  renderLadder();
+  buyTimer=setInterval(function(){
+    var left=180-Math.floor((Date.now()-buyStart)/1000);
+    if(left<=0){clearInterval(buyTimer);buyReady();return}
+    document.getElementById('buyNum').textContent=Math.floor(left/60)+':'+p2(left%60);
+    document.getElementById('buyRing').style.setProperty('--p',Math.round((180-left)/180*100));
+  },250);
+}
+function buyReady(){
+  var b=document.getElementById('buyGoBtn');
+  b.disabled=false; b.textContent='还是想买,记下来';
+  document.getElementById('buyNum').textContent='0:00';
+}
+function renderLadder(){
+  var top=LADDER[0],h='';
+  LADDER.forEach(function(x){
+    var m=Math.round(x.k/kcalPerMin()),sv=Math.round((top.k-x.k)/kcalPerMin());
+    h+='<div class="step"><div class="nm">'+x.n+'</div><div class="kc">'+x.k+' kcal · '+m+' 分钟'+
+      (sv>0?' · <span class="sv">省 '+sv+' 分钟</span>':'')+'</div></div>';
+  });
+  document.getElementById('ladder').innerHTML=h;
+}
+function bought(){ clearInterval(buyTimer); toLog(true); toast('买了就记下来,别糊过去'); }
+function skippedBuy(){
+  clearInterval(buyTimer);
+  S.events.push({ts:Date.now(),outcome:'skipped-buy',isNight:isNight(Date.now()),slot:slotOf(Date.now())});
+  save(); go('home'); render(); toast('省下一次,很好');
+}
+function addStock(){
+  var n=document.getElementById('stName').value.trim();
+  if(!n){toast('先写个名字');return}
+  S.settings.stock.push(n); save();
+  document.getElementById('stName').value='';
+  renderStock(); render();
+}
+function delStock(i){ S.settings.stock.splice(i,1); save(); renderStock(); render(); }
+function renderStock(){
+  var l=S.settings.stock;
+  document.getElementById('stockList').innerHTML=l.length?
+    l.map(function(x,i){return '<div class="srow"><div style="flex:1">'+x+'</div><button onclick="delStock('+i+')">清掉</button></div>'}).join('')
+    :'<div class="sub">还没登记。想一下家里现在有哪些随手就能拿到的吃的。</div>';
+}
+function pickFood(el,k){
+  document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
+  el.classList.add('sel'); pick.food=el.textContent; pick.kcal=k; showCost();
+}
+function useCustom(){
+  var n=document.getElementById('cfName').value.trim(),k=parseInt(document.getElementById('cfKcal').value,10);
+  if(!n||!k||k<=0){toast('名称和热量都要填');return}
+  document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
+  pick.food=n;pick.kcal=k;showCost();
+}
+function showCost(){
+  var m=Math.round(pick.kcal/kcalPerMin());
+  document.getElementById('costTxt').textContent=m+' 分钟';
+  document.getElementById('costSub').textContent=pick.kcal+' kcal · 相当于快走 '+m+' 分钟,或者慢跑 '+Math.round(m*0.6)+' 分钟';
+}
+function pickEmo(el,v){
+  document.querySelectorAll('#emoChips .chip').forEach(function(c){c.classList.remove('sel')});
+  el.classList.add('sel'); pick.emo=v;
+}
+function saveEaten(){
+  if(!pick.kcal){toast('先选一下吃了什么');return}
+  clearInterval(timer);
+  var p=S.pending||{};
+  S.events.push({ts:Date.now(),outcome:'eaten',item:pick.food,kcal:pick.kcal,emo:pick.emo||'未标记',
+    viaBuy:!!pick.viaBuy,
+    waitedSec:Math.min(90,Math.round((Date.now()-(p.start||Date.now()))/1000)),
+    realHunger:p.hunger,isNight:isNight(Date.now()),slot:slotOf(Date.now())});
+  S.pending=null; save(); go('home'); render();
+  toast('记下了,明天重新开始');
+}
+function saveSettings(){
+  var q=parseInt(document.getElementById('setQuota').value,10);
+  var w=parseInt(document.getElementById('setWeight').value,10);
+  if(!isNaN(q)&&q>=0)S.settings.dailyQuota=q;
+  if(!isNaN(w)&&w>0)S.settings.weightKg=w;
+  save(); render(); toast('已保存');
+}
+function exportData(){
+  var b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='管住嘴数据.json';a.click();toast('已导出');
+}
+function wipe(){ if(confirm('确定清空所有记录?不可恢复')){S.events=[];S.best=0;save();render();go('home')} }
+
+function renderStats(){
+  var ev=S.events,eat=ev.filter(function(e){return e.outcome==='eaten'});
+  document.getElementById('tTotal').textContent=ev.length;
+  document.getElementById('tEat').textContent=eat.length;
+  document.getElementById('tNight').textContent=eat.filter(function(e){return e.isNight}).length;
+  document.getElementById('tSkip').textContent=ev.filter(function(e){return e.outcome==='skipped-buy'}).length;
+
+  var cnt={};SLOTS.forEach(function(s){cnt[s[0]]=0});
+  eat.forEach(function(e){cnt[e.slot||slotOf(e.ts)]=(cnt[e.slot||slotOf(e.ts)]||0)+1});
+  var mx=Math.max(1,Math.max.apply(null,Object.keys(cnt).map(function(k){return cnt[k]})));
+  document.getElementById('hourBars').innerHTML=Object.keys(cnt).map(function(k){
+    return '<div class="hb"><div class="lb">'+k+'</div><div class="tr"><i style="width:'+(cnt[k]/mx*100)+'%"></i></div><div class="vv">'+cnt[k]+'</div></div>'}).join('');
+
+  var ec={};eat.forEach(function(e){var k=e.emo||'未标记';ec[k]=(ec[k]||0)+1});
+  var mx2=Math.max(1,Math.max.apply(null,Object.keys(ec).map(function(k){return ec[k]})));
+  document.getElementById('emoBars').innerHTML=Object.keys(ec).length?
+    Object.keys(ec).sort(function(a,b){return ec[b]-ec[a]}).map(function(k){
+      return '<div class="hb"><div class="lb">'+k+'</div><div class="tr"><i style="width:'+(ec[k]/mx2*100)+'%"></i></div><div class="vv">'+ec[k]+'</div></div>'}).join('')
+    :'<div class="sub">还没有吃饭记录</div>';
+
+  var top=null,tv=0;Object.keys(cnt).forEach(function(k){if(cnt[k]>tv){tv=cnt[k];top=k}});
+  var te=null,tev=0;Object.keys(ec).forEach(function(k){if(ec[k]>tev){tev=ec[k];te=k}});
+  var ins=document.getElementById('insight');
+  if(!eat.length){ins.innerHTML='<div class="sub">还没有破功记录。继续保持。</div>'}
+  else{
+    var pct=Math.round(tv/eat.length*100);
+    ins.innerHTML='<div style="font-size:14px;font-weight:600;margin-bottom:6px">你的规律</div>'+
+      '<div class="sub">'+pct+'% 的破功发生在「'+top+'」,'+
+      (te&&te!=='未标记'?'情绪主要是「'+te+'」。':'')+
+      '<br>别跟它对扛,提前把那个时段安排点别的事 —— 刷牙、出门走一圈、或者干脆早点睡。</div>';
+  }
+  document.getElementById('setQuota').value=S.settings.dailyQuota;
+  document.getElementById('setWeight').value=S.settings.weightKg;
+}
+
+var NAV='<div class="nav"><button class="nb nb-home on" onclick="navTo(\'home\')">首页</button>'+
+  '<button class="nb nb-stats" onclick="navTo(\'stats\')">复盘</button></div>';
+document.getElementById('v-home').insertAdjacentHTML('beforeend',NAV);
+document.querySelector('#v-stats h1').insertAdjacentHTML('afterend',NAV);
+document.getElementById('v-result').insertAdjacentHTML('beforeend',
+  '<button class="btn ghost" style="margin-top:14px" onclick="go(\'home\')">返回首页</button>');
+function navTo(v){
+  document.querySelectorAll('.nb-home').forEach(function(b){b.classList.toggle('on',v==='home')});
+  document.querySelectorAll('.nb-stats').forEach(function(b){b.classList.toggle('on',v==='stats')});
+  if(v==='stats')renderStats();
+  go(v); if(v==='home')render();
+}
+
+function route(){
+  var h=(location.hash||'').toLowerCase();
+  if(h.indexOf('crave')>-1){clearHash();startCrave()}
+  else if(h.indexOf('buy')>-1){clearHash();startBuy()}
+}
+function clearHash(){
+  if(location.hash&&history&&history.replaceState)history.replaceState(null,'',location.pathname);
+}
+
+load();
+if(S.pending&&Date.now()-S.pending.start<95*1000){go('wait');runTimer()} else {S.pending=null}
+render();
+route();
+window.onhashchange=route;
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
+</script>
+</body>
+</html>
