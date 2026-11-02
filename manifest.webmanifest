@@ -1,0 +1,31 @@
+{
+  "name": "管住嘴",
+  "short_name": "管住嘴",
+  "description": "在冲动和伸手之间插一道 90 秒的护栏",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF8",
+  "theme_color": "#0F6E56",
+  "lang": "zh-CN",
+  "shortcuts": [
+    {
+      "name": "我又想吃了",
+      "short_name": "想吃",
+      "description": "直接进入 90 秒倒计时",
+      "url": "index.html#crave"
+    },
+    {
+      "name": "我想买",
+      "short_name": "想买",
+      "description": "进入 3 分钟购买冷静期",
+      "url": "index.html#buy"
+    }
+  ],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
