@@ -1,4 +1,4 @@
-var C = 'mouthguard-v2';
+var C = 'mouthguard-v3';
 var FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-512.png', './icon-180.png'];
 
 self.addEventListener('install', function (e) {
