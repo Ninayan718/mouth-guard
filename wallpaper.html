@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>锁屏壁纸 · 管住嘴</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:#0d0f12;color:#fafafa;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:0 30px;min-height:100vh;user-select:none;overflow:hidden}
+  .tip{font-size:15px;letter-spacing:.32em;color:#6fcf97;margin-bottom:24px;font-weight:700}
+  .big{font-size:42px;font-weight:800;line-height:1.34;text-align:center;letter-spacing:.01em}
+  .q{font-size:21px;color:#c8cdd3;text-align:center;margin-top:30px;line-height:1.65}
+  .down{position:fixed;bottom:56px;left:0;right:0;text-align:center;
+    font-size:14px;color:#777d86;letter-spacing:.05em}
+  .switch{position:fixed;top:calc(env(safe-area-inset-top,14px) + 4px);right:16px;
+    background:rgba(255,255,255,.12);color:#fff;font-size:13px;
+    padding:7px 15px;border-radius:20px;border:none}
+  .night{background:#070912}
+  .night .tip{color:#7aa2ff}
+</style>
+</head>
+<body id="b">
+  <button class="switch" onclick="toggle()">切到深夜版</button>
+  <div class="tip">买之前，停 3 秒</div>
+  <div class="big">真饿，还是<br>只是嘴痒？</div>
+  <div class="q">能降级就降级：<br>奶茶→无糖小杯 · 零食→买一包别买一袋</div>
+  <div class="down">长按截图 → 设为锁屏壁纸</div>
+<script>
+function toggle(){
+  var b=document.getElementById('b');
+  b.classList.toggle('night');
+  var sw=document.querySelector('.switch');
+  if(b.classList.contains('night')){
+    sw.textContent='切到白天版';
+    document.querySelector('.tip').textContent='深夜了，别开冰箱';
+    document.querySelector('.big').innerHTML='明早再吃<br>今晚已经够了';
+    document.querySelector('.q').innerHTML='你八成的破功都在这个钟点<br>睡一觉，明天轻松点';
+  }else{
+    sw.textContent='切到深夜版';
+    document.querySelector('.tip').textContent='买之前，停 3 秒';
+    document.querySelector('.big').innerHTML='真饿，还是<br>只是嘴痒？';
+    document.querySelector('.q').innerHTML='能降级就降级：<br>奶茶→无糖小杯 · 零食→买一包别买一袋';
+  }
+}
+</script>
+</body>
+</html>
