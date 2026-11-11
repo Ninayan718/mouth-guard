@@ -110,12 +110,19 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   <div class="card" id="stockCard"></div>
 
   <div class="stat">
-    <div class="card"><b id="sStreak">0</b><em>连续在额度内</em></div>
-    <div class="card"><b id="sRate">0</b><em>近 7 天共吃了</em></div>
+    <div class="card"><b id="sDown">—</b><em>购买降级率</em></div>
+    <div class="card"><b id="sRate">0</b><em>近 7 天共买了</em></div>
     <div class="card"><b id="sMin">0/5</b><em>环境改造</em></div>
   </div>
 
   <div class="card" style="margin-top:14px" id="recent"></div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>买之前能看到提醒吗</h2>
+    <div class="sub" style="margin:6px 0 12px">网页没法在你掏手机付款时弹窗,这一步得靠手机系统。点下面照着设一次,以后自动提醒,不用你记着。</div>
+    <button class="btn pri" style="margin-bottom:8px" onclick="location.href='guide.html'">设「付款前提醒」(系统级)</button>
+    <button class="btn ghost" onclick="location.href='wallpaper.html'">做一张锁屏壁纸</button>
+  </div>
 
   <button class="btn" style="margin-top:4px" onclick="go('tools')">当场想拦一下 →</button>
 </div>
@@ -199,6 +206,7 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
     <h2>破功时的情绪</h2>
     <div id="emoBars"></div>
   </div>
+  <div class="card" id="downCard"></div>
   <div class="card ok" id="insight"></div>
   <div class="card">
     <h2>设置</h2>
@@ -251,11 +259,23 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
 <script>
 var KEY='mouthguard.v1';
 var DEF={dailyQuota:2,weightKg:60};
+// grp=同类,tier=档位(0 最差,越大越省);down=是否比同类最高热量版更低
 var FOODS=[
- {n:'奶茶(中杯全糖)',k:350},{n:'奶茶(少糖)',k:260},{n:'可乐 500ml',k:210},{n:'果汁',k:180},
- {n:'薯片一包',k:380},{n:'巧克力',k:270},{n:'蛋糕一块',k:300},{n:'饼干两片',k:100},
- {n:'坚果一把',k:180},{n:'冰淇淋',k:250},{n:'炸鸡一块',k:250},{n:'手抓饼',k:400},
- {n:'面包一个',k:280},{n:'糖果',k:100},{n:'泡面',k:450},{n:'烧烤一串',k:120}
+ {n:'奶茶(中杯全糖)',k:350,grp:'奶茶',tier:0,down:false},
+ {n:'奶茶(少糖)',k:260,grp:'奶茶',tier:1,down:true},
+ {n:'奶茶(无糖/纯茶)',k:30,grp:'奶茶',tier:2,down:true},
+ {n:'美式咖啡',k:15,grp:'奶茶',tier:3,down:true},
+ {n:'可乐 500ml',k:210,grp:'可乐',tier:0,down:false},
+ {n:'零度可乐',k:5,grp:'可乐',tier:1,down:true},
+ {n:'薯片一大包',k:550,grp:'薯片',tier:0,down:false},
+ {n:'薯片一小包',k:160,grp:'薯片',tier:1,down:true},
+ {n:'蛋糕一块',k:300,down:false},{n:'巧克力',k:270,down:false},
+ {n:'冰淇淋',k:250,down:false},{n:'炸鸡一块',k:250,down:false},
+ {n:'手抓饼',k:400,down:false},{n:'面包一个',k:280,down:false},
+ {n:'泡面',k:450,down:false},{n:'果汁',k:180,down:false},
+ {n:'坚果一小把',k:120,down:true},{n:'饼干两片',k:100,down:true},
+ {n:'酸奶一杯',k:90,down:true},{n:'水果一份',k:80,down:true},
+ {n:'烧烤一串',k:120,down:false},{n:'糖果',k:100,down:false}
 ];
 var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
 var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
@@ -306,6 +326,11 @@ function streak(){
   if(n>S.best){S.best=n}
   return n;
 }
+function downRate(){
+  var eat=S.events.filter(function(e){return e.outcome==='eaten'});
+  if(!eat.length)return null;
+  return Math.round(eat.filter(function(e){return e.down}).length/eat.length*100);
+}
 
 function go(v){
   document.querySelectorAll('.view').forEach(function(x){x.classList.remove('on')});
@@ -330,7 +355,8 @@ function render(){
 
   renderDay();
   renderEnv();
-  document.getElementById('sStreak').textContent=dayStreak();
+  var dr=downRate();
+  document.getElementById('sDown').textContent=dr===null?'—':dr+'%';
   document.getElementById('sRate').textContent=weekCount();
   document.getElementById('sMin').textContent=ENV.filter(function(x){return S.env[x.k]}).length+'/'+ENV.length;
 
@@ -350,8 +376,8 @@ function render(){
   document.getElementById('recent').innerHTML=h;
 
   var cf=document.getElementById('foodChips');
-  if(!cf.dataset.done){cf.dataset.done=1;cf.innerHTML=FOODS.map(function(f){
-    return '<button class="chip" data-k="'+f.k+'" onclick="pickFood(this,'+f.k+')">'+f.n+'</button>'}).join('')}
+  if(!cf.dataset.done){cf.dataset.done=1;cf.innerHTML=FOODS.map(function(f,i){
+    return '<button class="chip'+(f.down?' ok':'')+'" data-k="'+f.k+'" onclick="pickFood(this,'+i+')">'+f.n+(f.down?' ↓':'')+'</button>'}).join('')}
   var ce=document.getElementById('emoChips');
   if(!ce.dataset.done){ce.dataset.done=1;ce.innerHTML=EMOS.map(function(x){
     return '<button class="chip" onclick="pickEmo(this,\''+x+'\')">'+x+'</button>'}).join('')}
@@ -505,9 +531,10 @@ function renderStock(){
     l.map(function(x,i){return '<div class="srow"><div style="flex:1">'+x+'</div><button onclick="delStock('+i+')">清掉</button></div>'}).join('')
     :'<div class="sub">还没登记。想一下家里现在有哪些随手就能拿到的吃的。</div>';
 }
-function pickFood(el,k){
+function pickFood(el,i){
+  var f=FOODS[i];
   document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
-  el.classList.add('sel'); pick.food=el.textContent; pick.kcal=k; showCost();
+  el.classList.add('sel'); pick.food=f.n; pick.kcal=f.k; pick.down=!!f.down; showCost(f);
 }
 function useCustom(){
   var n=document.getElementById('cfName').value.trim(),k=parseInt(document.getElementById('cfKcal').value,10);
@@ -515,10 +542,21 @@ function useCustom(){
   document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
   pick.food=n;pick.kcal=k;showCost();
 }
-function showCost(){
+function showCost(f){
+  f=f||FOODS.filter(function(x){return x.n===pick.food&&x.k===pick.kcal})[0];
   var m=Math.round(pick.kcal/kcalPerMin());
+  var sub=pick.kcal+' kcal · 相当于快走 '+m+' 分钟';
+  if(f&&f.grp){
+    var top=FOODS.filter(function(x){return x.grp===f.grp}).sort(function(a,b){return b.k-a.k})[0];
+    if(f.k<top.k){
+      var sv=Math.round((top.k-pick.kcal)/kcalPerMin());
+      sub+='<br><span style="color:var(--ac);font-weight:600">已降级 ✓ 比'+top.n+'省 '+sv+' 分钟</span>';
+    }
+  } else if(f&&f.down){
+    sub+='<br><span style="color:var(--ac);font-weight:600">这个选择比不少高热量零食稳多了 ✓</span>';
+  }
   document.getElementById('costTxt').textContent=m+' 分钟';
-  document.getElementById('costSub').textContent=pick.kcal+' kcal · 相当于快走 '+m+' 分钟,或者慢跑 '+Math.round(m*0.6)+' 分钟';
+  document.getElementById('costSub').innerHTML=sub;
 }
 function pickEmo(el,v){
   document.querySelectorAll('#emoChips .chip').forEach(function(c){c.classList.remove('sel')});
@@ -529,7 +567,7 @@ function saveEaten(){
   clearInterval(timer);
   var p=S.pending||{};
   S.events.push({ts:Date.now(),outcome:'eaten',item:pick.food,kcal:pick.kcal,emo:pick.emo||'未标记',
-    viaBuy:!!pick.viaBuy,
+    viaBuy:!!pick.viaBuy,down:!!pick.down,
     waitedSec:Math.min(90,Math.round((Date.now()-(p.start||Date.now()))/1000)),
     realHunger:p.hunger,isNight:isNight(Date.now()),slot:slotOf(Date.now())});
   S.pending=null; save(); go('home'); render();
@@ -578,6 +616,14 @@ function renderStats(){
 
   var top=null,tv=0;Object.keys(cnt).forEach(function(k){if(cnt[k]>tv){tv=cnt[k];top=k}});
   var te=null,tev=0;Object.keys(ec).forEach(function(k){if(ec[k]>tev){tev=ec[k];te=k}});
+  var dr=downRate();
+  var avg=eat.length?Math.round(eat.reduce(function(s,e){return s+(e.kcal||0)},0)/eat.length/kcalPerMin()):0;
+  document.getElementById('downCard').innerHTML='<h2>你买的在降级吗</h2>'+
+    (eat.length
+      ? '<div class="sub">共买了 '+eat.length+' 次,其中 <b style="color:var(--ac)">'+(dr||0)+'% 选了更低热量的版本</b>;平均每次代价约 '+avg+' 分钟快走。'+
+        (dr>=50?'<br>方向对了,继续往下降。':'<br>别追求不买,先把每次的版本往下挪一档。')+'</div>'
+      : '<div class="sub">还没有购买记录。</div>');
+
   var ins=document.getElementById('insight');
   var envDone=ENV.filter(function(x){return S.env[x.k]}).length;
   var envTip=envDone<ENV.length
