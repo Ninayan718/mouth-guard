@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>付款前提醒 · 设置引导</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:#0F6E56;color:#fff;font-family:-apple-system,"PingFang SC",system-ui,sans-serif;line-height:1.65;padding:0 0 50px}
+  .hero{padding:40px 22px 26px}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:.5px}
+  .hero p{font-size:14px;opacity:.92;margin-top:10px}
+  .wrap{max-width:540px;margin:0 auto;padding:0 18px}
+  .tabs{display:flex;gap:8px;margin-bottom:18px}
+  .tabs button{flex:1;padding:11px;border-radius:12px;border:none;font-size:15px;font-weight:600;
+    background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-family:inherit}
+  .tabs button.on{background:#fff;color:#0F6E56}
+  .panel{display:none}
+  .panel.on{display:block}
+  .card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+  .card h2{font-size:16px;margin-bottom:10px}
+  .card.sub2{background:rgba(255,255,255,.06)}
+  ol{margin:0;padding-left:20px}
+  li{margin-bottom:9px;font-size:14px}
+  li b{font-weight:700}
+  .hl{background:rgba(255,255,255,.2);border-radius:6px;padding:1px 7px;font-size:13px;white-space:nowrap}
+  .note{font-size:13px;opacity:.86;margin-top:8px}
+  .key{background:#fff;color:#0F6E56;border-radius:12px;padding:14px 16px;font-size:14px;margin:14px 0;line-height:1.6}
+  .back{display:inline-block;margin:6px 0 0 18px;color:#fff;opacity:.85;font-size:14px;text-decoration:none}
+  .done{text-align:center;font-size:13px;opacity:.82;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>付款前提醒</h1>
+  <p>网页 App 没法在你掏手机付款那一刻弹窗——这道关必须交给手机系统。照下面设一次,以后自动提醒,不用你记着。</p>
+</div>
+<div class="wrap">
+  <a class="back" href="index.html">← 回到管住嘴</a>
+  <div class="tabs">
+    <button class="on" onclick="sw('ios')">iPhone</button>
+    <button onclick="sw('az')">安卓</button>
+  </div>
+
+  <div class="panel on" id="ios">
+    <div class="key">核心思路:你买零食奶茶时一定会掏手机。让系统在「打开外卖/付款 App」或「固定高危时段」时,自动弹一句话,把自动化行为打断一秒。</div>
+
+    <div class="card">
+      <h2>方案 A · 打开外卖 App 就弹提醒(最精准)</h2>
+      <ol>
+        <li>打开系统自带的 <b>「快捷指令」</b> App(没有就去 App Store 搜"快捷指令"下载)</li>
+        <li>底部切到 <span class="hl">自动化</span> → 右上角 <span class="hl">+</span> → <b>创建个人自动化</b></li>
+        <li>选 <span class="hl">App</span> → 选取 <b>美团 / 饿了么 / 微信</b>(可多选) → 下一步</li>
+        <li>添加操作 → 搜 <b>「显示通知」</b> → 标题填 <span class="hl">买之前停 3 秒</span> ,内容填 <span class="hl">真饿还是嘴痒?奶茶→无糖小杯</span></li>
+        <li>关掉 <span class="hl">运行前询问</span> → 完成</li>
+      </ol>
+      <div class="note">以后每次点开外卖/付款,这句话自动弹出来。不用你想起任何东西。</div>
+    </div>
+
+    <div class="card sub2">
+      <h2>方案 B · 每天高危时段定时提醒(最稳)</h2>
+      <ol>
+        <li>打开 <b>「时钟」</b> App → 闹钟 → 右上角 <span class="hl">+</span></li>
+        <li>设一个你最容易破功的钟点(比如 <b>15:00 下午茶</b>、<b>21:00 睡前</b>)</li>
+        <li>重复选 <b>每天</b>,标签直接写 <span class="hl">先喝口水,再决定买不买</span></li>
+      </ol>
+      <div class="note">闹钟 100% 会响,比任何 App 都可靠。两个时段都设上也行。</div>
+    </div>
+  </div>
+
+  <div class="panel" id="az">
+    <div class="key">安卓同样靠系统:要么用「时钟」设重复闹钟,要么用自动化 App 在打开外卖时弹通知。</div>
+    <div class="card">
+      <h2>方案 A · 重复闹钟(推荐,最稳)</h2>
+      <ol>
+        <li>打开 <b>「时钟」</b> App → 闹钟 → <span class="hl">+</span></li>
+        <li>设高危时段(15:00 / 21:00),重复 <b>每天</b></li>
+        <li>标签写 <span class="hl">先喝口水,再决定买不买</span></li>
+      </ol>
+    </div>
+    <div class="card sub2">
+      <h2>方案 B · 打开外卖 App 自动提醒</h2>
+      <ol>
+        <li>装一个自动化 App,比如 <b>MacroDroid</b>(免费版够用)</li>
+        <li>新建宏 → 触发器选 <span class="hl">应用启动</span> → 选 美团 / 饿了么</li>
+        <li>动作选 <span class="hl">显示通知 / 弹窗</span> → 内容填提醒语</li>
+      </ol>
+      <div class="note">部分国产系统自带"场景/自动化"也能做类似效果,在设置里搜一下"自动化"或"场景"入口。</div>
+    </div>
+  </div>
+
+  <div class="done">设好一个就够用。这道提醒是"购买瞬间"唯一可靠的关,网页做不到,必须靠它。</div>
+</div>
+<script>
+function sw(t){
+  document.getElementById('ios').classList.toggle('on',t==='ios');
+  document.getElementById('az').classList.toggle('on',t==='az');
+  document.querySelectorAll('.tabs button').forEach(function(b,i){
+    b.classList.toggle('on',(t==='ios'&&i===0)||(t==='az'&&i===1));
+  });
+}
+</script>
+</body>
+</html>
