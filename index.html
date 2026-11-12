@@ -99,22 +99,33 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   </div>
   <div id="nightNote"></div>
 
-  <div class="card">
+  <div class="card" style="border-color:var(--ac);border-width:2px">
+    <div class="row"><h2 style="margin-bottom:0">查一下该不该买 / 吃</h2>
+      <span class="tiny" style="color:var(--ac);white-space:nowrap">买前 · 吃前 · 吃后</span></div>
+    <div class="sub" style="margin:6px 0 12px">不用意志力,选一样它替你判断:该不该买、现在能不能吃、吃了怎么补。</div>
+    <input id="ckSearch" placeholder="搜一下,比如 奶茶 / 薯片" oninput="filterCheck()">
+    <div class="chips" id="checkChips" style="margin-top:10px"></div>
+    <div class="sep"></div>
+    <label class="f" style="margin-top:0">库里没有?自己填(名称 + 热量 kcal)</label>
+    <div class="btn2">
+      <input id="ckName" placeholder="比如 蛋挞" style="flex:2">
+      <input id="ckKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
+    </div>
+    <button class="btn pri" style="margin-top:10px" onclick="pickCheckCustom()">用这个查</button>
+  </div>
+  <div id="checkResult"></div>
+
+  <div class="card" style="margin-top:14px">
     <h2>今天吃了几次</h2>
     <div class="sub">睡前花 10 秒回忆一下就行,不用当场记</div>
     <div class="chips" id="countChips"></div>
     <div class="tiny" style="margin-top:10px" id="todayNote"></div>
   </div>
 
-  <button class="btn pri" style="margin-top:14px;margin-bottom:4px" onclick="go('check')">查一下该不该买 / 吃 →</button>
-
-  <div class="card" id="envCard"></div>
-  <div class="card" id="stockCard"></div>
-
   <div class="stat">
     <div class="card"><b id="sDown">—</b><em>购买降级率</em></div>
     <div class="card"><b id="sRate">0</b><em>近 7 天共买了</em></div>
-    <div class="card"><b id="sMin">0/5</b><em>环境改造</em></div>
+    <div class="card"><b id="sNight">0</b><em>深夜破功</em></div>
   </div>
 
   <div class="card" style="margin-top:14px" id="recent"></div>
@@ -127,23 +138,6 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   </div>
 
   <button class="btn" style="margin-top:4px" onclick="go('tools')">当场想拦一下 →</button>
-</div>
-
-<div id="v-check" class="view">
-  <h1 style="margin-bottom:4px">查一下</h1>
-  <div class="sub">买之前、吃之前、吃完之后,都来这查一下。不用意志力,它替你判断。</div>
-  <input id="ckSearch" placeholder="搜一下,比如 奶茶 / 薯片" style="margin-top:14px" oninput="filterCheck()">
-  <div class="chips" id="checkChips" style="margin-top:10px"></div>
-  <div class="card" style="margin-top:12px">
-    <label class="f">库里没有?自己填(名称 + 热量 kcal)</label>
-    <div class="btn2">
-      <input id="ckName" placeholder="比如 蛋挞" style="flex:2">
-      <input id="ckKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
-    </div>
-    <button class="btn" style="margin-top:10px" onclick="pickCheckCustom()">用这个查</button>
-  </div>
-  <div id="checkResult"></div>
-  <button class="btn ghost" style="margin-top:14px" onclick="navTo('home')">回到首页</button>
 </div>
 
 <div id="v-tools" class="view">
@@ -215,7 +209,7 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   <div class="card">
     <h2>近 7 天,每天吃了几次</h2>
     <div id="dayBars"></div>
-    <div class="tiny" style="margin-top:8px">看趋势,不看单天。哪几天特别多,回想一下那天东西放在哪。</div>
+    <div class="tiny" style="margin-top:8px">看趋势,不看单天。哪几天特别多,回想一下那天发生了什么。</div>
   </div>
   <div class="card">
     <h2>破功集中在哪个时段</h2>
@@ -256,22 +250,6 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   <button class="btn ghost" style="margin-top:10px" onclick="skippedBuy()">算了,不买了</button>
 </div>
 
-<div id="v-stock" class="view">
-  <h1 style="margin-bottom:4px">家里现在有什么</h1>
-  <div class="sub">登记一次就行。这个数字往下走,你的日子会好过很多。</div>
-  <div class="card" style="margin-top:14px">
-    <div class="btn2">
-      <input id="stName" placeholder="比如 薯片、饼干、可乐" style="flex:2">
-      <button class="btn pri" style="flex:1" onclick="addStock()">添加</button>
-    </div>
-    <div id="stockList" style="margin-top:12px"></div>
-  </div>
-  <div class="card ok">
-    <div class="sub">挑一样今天就能做的:把零食挪到最高层柜子、扔掉过期的一半、下次买之前先回来看一眼这个数字。</div>
-  </div>
-  <button class="btn" onclick="navTo('home')">回到首页</button>
-</div>
-
 </div>
 <div class="toast" id="toast"></div>
 
@@ -307,13 +285,6 @@ var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
 var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
 var LADDER=[{n:'全糖奶茶',k:350},{n:'少糖奶茶',k:260},{n:'无糖 / 纯茶',k:30},{n:'美式咖啡',k:15}];
 var EXERCISE=[{n:'快走',mul:1.0},{n:'慢跑',mul:2.5},{n:'跳绳',mul:2.7},{n:'游泳',mul:2.0},{n:'骑行',mul:1.7}];
-var ENV=[
- {k:'hide',t:'零食放进不透明罐 / 柜子最上层'},
- {k:'clear',t:'桌面茶几清空,不放吃的'},
- {k:'note',t:'柜门内侧贴了提示纸条'},
- {k:'swap',t:'原位放了替代物(口香糖 / 水 / 水果)'},
- {k:'lock',t:'锁屏壁纸设了预先承诺(奶茶点无糖)'}
-];
 var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0,checkF=null;
 
 function load(){
@@ -321,9 +292,7 @@ function load(){
   S=raw&&raw.events?raw:{settings:{},events:[],best:0};
   S.settings=Object.assign({},DEF,S.settings||{});
   if(!S.events)S.events=[]; if(!S.best)S.best=0;
-  if(!Array.isArray(S.settings.stock))S.settings.stock=[];
   if(!S.days||typeof S.days!=='object')S.days={};
-  if(!S.env||typeof S.env!=='object')S.env={};
 }
 function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 
@@ -405,11 +374,10 @@ function render(){
   } else nn.innerHTML='';
 
   renderDay();
-  renderEnv();
   var dr=downRate();
   document.getElementById('sDown').textContent=dr===null?'—':dr+'%';
   document.getElementById('sRate').textContent=weekCount();
-  document.getElementById('sMin').textContent=ENV.filter(function(x){return S.env[x.k]}).length+'/'+ENV.length;
+  document.getElementById('sNight').textContent=S.events.filter(function(e){return e.outcome==='eaten'&&e.isNight}).length;
 
   var rc=S.events.slice().reverse().slice(0,5),h='';
   if(!rc.length){h='<div class="sub">还没有当场记录。没关系 —— 睡前补记才是主要方式,那个按钮只是偶尔用得上。</div>'}
@@ -433,14 +401,6 @@ function render(){
   if(!ce.dataset.done){ce.dataset.done=1;ce.innerHTML=EMOS.map(function(x){
     return '<button class="chip" onclick="pickEmo(this,\''+x+'\')">'+x+'</button>'}).join('')}
 
-  var st=S.settings.stock;
-  document.getElementById('stockCard').innerHTML=
-    '<div class="row"><span class="sub">家里存货</span>'+
-    '<span class="sub" style="color:'+(st.length?'var(--warn)':'var(--ac)')+'">'+st.length+' 样</span></div>'+
-    '<div class="tiny" style="margin-top:6px">'+(st.length
-      ? '这些是你每天都要重新跟它较劲的东西。少一样,轻松一点。'
-      : '空着最好。下次想买的时候,先回来看一眼这个数字。')+'</div>'+
-    '<button class="btn ghost" style="margin-top:10px" onclick="go(\'stock\');renderStock()">登记 / 管理</button>';
 }
 
 function weekCount(){
@@ -464,20 +424,6 @@ function renderDay(){
   document.getElementById('todayNote').textContent=n===undefined
     ? '还没记。睡前点一下数字就好。'
     : (n===0?'今天一次都没有,很稳。':(n<=q?'今天 '+n+' 次,在额度内。':'今天 '+n+' 次,超了 '+(n-q)+' 次。明天重新开始就好。'));
-}
-function toggleEnv(k){ S.env[k]=!S.env[k]; save(); render(); }
-function renderEnv(){
-  var done=ENV.filter(function(x){return S.env[x.k]}).length;
-  var h='<div class="row"><h2 style="margin-bottom:0">环境改造清单</h2>'+
-    '<span class="sub" style="color:var(--ac)">'+done+' / '+ENV.length+'</span></div>'+
-    '<div class="bar"><i style="width:'+(done/ENV.length*100)+'%"></i></div>'+
-    '<div class="tiny" style="margin:8px 0 4px">这些做完一次能管很久。点一下勾上。</div>';
-  ENV.forEach(function(x){
-    h+='<div class="srow" style="cursor:pointer" onclick="toggleEnv(\''+x.k+'\')">'+
-      '<div style="width:18px;flex:none;color:'+(S.env[x.k]?'var(--ac)':'var(--tx3)')+'">'+(S.env[x.k]?'✓':'○')+'</div>'+
-      '<div style="flex:1;font-size:13px'+(S.env[x.k]?';color:var(--tx3);text-decoration:line-through':'')+'">'+x.t+'</div></div>';
-  });
-  document.getElementById('envCard').innerHTML=h;
 }
 function startCrave(){
   S.pending={start:Date.now(),hunger:null}; save();
@@ -567,20 +513,6 @@ function skippedBuy(){
   clearInterval(buyTimer);
   S.events.push({ts:Date.now(),outcome:'skipped-buy',isNight:isNight(Date.now()),slot:slotOf(Date.now())});
   save(); go('home'); render(); toast('省下一次,很好');
-}
-function addStock(){
-  var n=document.getElementById('stName').value.trim();
-  if(!n){toast('先写个名字');return}
-  S.settings.stock.push(n); save();
-  document.getElementById('stName').value='';
-  renderStock(); render();
-}
-function delStock(i){ S.settings.stock.splice(i,1); save(); renderStock(); render(); }
-function renderStock(){
-  var l=S.settings.stock;
-  document.getElementById('stockList').innerHTML=l.length?
-    l.map(function(x,i){return '<div class="srow"><div style="flex:1">'+x+'</div><button onclick="delStock('+i+')">清掉</button></div>'}).join('')
-    :'<div class="sub">还没登记。想一下家里现在有哪些随手就能拿到的吃的。</div>';
 }
 function pickFood(el,i){
   var f=FOODS[i];
@@ -694,6 +626,7 @@ function renderCheck(){
     '<div class="tiny" style="margin-top:10px;color:var(--tx2)">体重看长期热量平衡,单顿不致命。用运动或后续少吃补回即可,别因为一次破功就放弃。</div></div>';
 
   box.innerHTML=card1+card2+card3;
+  try{var cr=document.getElementById('checkResult');if(cr.scrollIntoView)cr.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
 }
 
 function renderStats(){
@@ -734,18 +667,13 @@ function renderStats(){
       : '<div class="sub">还没有购买记录。</div>');
 
   var ins=document.getElementById('insight');
-  var envDone=ENV.filter(function(x){return S.env[x.k]}).length;
-  var envTip=envDone<ENV.length
-    ? '<br>环境清单还差 '+(ENV.length-envDone)+' 项。先去把东西挪走,比在这里下决心有用。'
-    : '<br>环境清单全做完了,保持住就行。';
-  if(!eat.length){ins.innerHTML='<div class="sub">还没有破功记录。'+envTip+'</div>'}
+  if(!eat.length){ins.innerHTML='<div class="sub">还没有破功记录。继续保持。</div>'}
   else{
     var pct=Math.round(tv/eat.length*100);
     ins.innerHTML='<div style="font-size:14px;font-weight:600;margin-bottom:6px">你的规律</div>'+
       '<div class="sub">'+pct+'% 的破功发生在「'+top+'」,'+
       (te&&te!=='未标记'?'情绪主要是「'+te+'」。':'')+
-      '<br>别跟它对扛,提前把那个时段安排点别的事 —— 刷牙、出门走一圈、或者干脆早点睡。'+
-      envTip+'</div>';
+      '<br>别跟它对扛,提前把那个时段安排点别的事 —— 刷牙、出门走一圈、或者干脆早点睡。</div>';
   }
   document.getElementById('setQuota').value=S.settings.dailyQuota;
   document.getElementById('setWeight').value=S.settings.weightKg;
@@ -780,7 +708,13 @@ renderCheckChips();
 renderCheck();
 route();
 window.onhashchange=route;
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+  var refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(refreshing)return; refreshing=true; location.reload();
+  });
+}
 </script>
 </body>
 </html>
