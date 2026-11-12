@@ -103,15 +103,22 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
     <div class="row"><h2 style="margin-bottom:0">查一下该不该买 / 吃</h2>
       <span class="tiny" style="color:var(--ac);white-space:nowrap">买前 · 吃前 · 吃后</span></div>
     <div class="sub" style="margin:6px 0 12px">不用意志力,选一样它替你判断:该不该买、现在能不能吃、吃了怎么补。</div>
-    <input id="ckSearch" placeholder="搜一下,比如 奶茶 / 薯片" oninput="filterCheck()">
+    <input id="ckSearch" placeholder="搜一下,比如 奶茶 / 薯片 / 蛋挞" oninput="filterCheck()">
     <div class="chips" id="checkChips" style="margin-top:10px"></div>
+    <div class="tiny" id="ckNoResult" style="margin-top:8px;color:var(--ac);display:none">库里没有这个?下面选个大概的类型就行,不用填热量。</div>
     <div class="sep"></div>
-    <label class="f" style="margin-top:0">库里没有?自己填(名称 + 热量 kcal)</label>
+    <label class="f" style="margin-top:0">没搜到?选个大概的类型 —— 点一下就出结果,不用查热量</label>
+    <input id="ckName" placeholder="名字(可不填,比如 蛋挞)" style="margin-bottom:10px">
+    <div class="chips" id="estType"></div>
+    <div class="chips" id="estSize" style="margin-top:8px"></div>
+    <div class="tiny" style="margin-top:8px">份量不想选就按中份算。按类型估个大概,足够判断了。</div>
+    <button class="btn ghost" style="margin-top:10px" onclick="pickCheckGuess()">懒得选 · 按最保守估(不给数字)</button>
+    <div class="sep"></div>
+    <div class="tiny" style="margin:0 0 8px">包装上看到数字了?写的是 kJ(千焦),÷4 才是 kcal;还要看清是「每 100g」还是「每份」。</div>
     <div class="btn2">
-      <input id="ckName" placeholder="比如 蛋挞" style="flex:2">
-      <input id="ckKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
+      <input id="ckKcal" type="number" inputmode="numeric" placeholder="可选:填 kcal" style="flex:1">
+      <button class="btn ghost" style="flex:1" onclick="pickCheckExact()">用这个精确查</button>
     </div>
-    <button class="btn pri" style="margin-top:10px" onclick="pickCheckCustom()">用这个查</button>
   </div>
   <div id="checkResult"></div>
 
@@ -179,10 +186,10 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   <div class="card" style="margin-top:14px">
     <h2>常见选项</h2>
     <div class="chips" id="foodChips"></div>
-    <label class="f">自定义(名称 + 热量 kcal)</label>
+    <label class="f">自定义(写个名字就行,热量不知道可留空)</label>
     <div class="btn2">
       <input id="cfName" placeholder="比如 蛋挞" style="flex:2">
-      <input id="cfKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
+      <input id="cfKcal" type="number" inputmode="numeric" placeholder="kcal 可留空" style="flex:1">
     </div>
     <button class="btn" style="margin-top:10px" onclick="useCustom()">用这个</button>
   </div>
@@ -285,7 +292,34 @@ var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
 var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
 var LADDER=[{n:'全糖奶茶',k:350},{n:'少糖奶茶',k:260},{n:'无糖 / 纯茶',k:30},{n:'美式咖啡',k:15}];
 var EXERCISE=[{n:'快走',mul:1.0},{n:'慢跑',mul:2.5},{n:'跳绳',mul:2.7},{n:'游泳',mul:2.0},{n:'骑行',mul:1.7}];
-var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0,checkF=null;
+// 不知道热量时,只选类型和份量即可。k=[小,中,大],并自带评级所需的 sugar/nutri/cat
+var EST=[
+ {t:'奶茶 / 含糖饮料',k:[150,300,450],sugar:true, nutri:0,cat:'drink',grp:'奶茶'},
+ {t:'蛋糕 / 面包 / 蛋挞',k:[150,300,500],sugar:true, nutri:0,cat:'snack'},
+ {t:'薯片 / 炸鸡 / 油炸',k:[180,350,550],sugar:false,nutri:0,cat:'snack'},
+ {t:'糖果 / 巧克力',k:[100,220,400],sugar:true, nutri:0,cat:'snack'},
+ {t:'坚果 / 酸奶 / 乳制品',k:[90,160,280],sugar:false,nutri:2,cat:'snack'},
+ {t:'水果',k:[50,90,150],sugar:true, nutri:3,cat:'fruit'},
+ {t:'正餐 / 主食(泡面等)',k:[250,450,700],sugar:false,nutri:1,cat:'meal'},
+ {t:'无糖茶 / 黑咖啡',k:[5,15,30],sugar:false,nutri:1,cat:'drink',grp:'奶茶'}
+];
+var SIZES=['小份','中份','大份'];
+// 常见中文零食别名 -> FOODS 索引,搜索时不用精确记名字
+var ALIAS_RAW={
+ '珍珠奶茶':0,'波霸奶茶':0,'奶绿':0,'全糖':0,'奶茶':0,'杨枝甘露':0,
+ '少糖':1,'半糖':1,'三分糖':1,'无糖奶茶':2,'四季春':2,'纯茶':2,
+ '美式':3,'黑咖啡':3,'拿铁':3,'可乐':4,'雪碧':4,'汽水':4,'可口可乐':4,
+ '零度':5,'无糖可乐':5,'代糖':5,'薯片':6,'乐事':6,'小包薯片':7,
+ '蛋糕':8,'生日蛋糕':8,'慕斯':8,'泡芙':8,'蛋黄酥':8,'蛋挞':8,'瑞士卷':8,
+ '德芙':9,'士力架':9,'雪糕':10,'甜筒':10,'炸鸡':11,'鸡块':11,
+ '煎饼':12,'鸡蛋灌饼':12,'吐司':13,'手撕面包':13,'方便面':14,
+ '橙汁':15,'巴旦木':16,'核桃':16,'曲奇':17,'苏打饼干':17,'麻薯':17,
+ '养乐多':18,'苹果':19,'香蕉':19,'小番茄':19,'烤肠':20,'串串':20,
+ '软糖':21,'棒棒糖':21,'辣条':21,'沙琪玛':21
+};
+var ALIAS_BY_IDX={};
+Object.keys(ALIAS_RAW).forEach(function(k){var i=ALIAS_RAW[k];(ALIAS_BY_IDX[i]=ALIAS_BY_IDX[i]||[]).push(k)});
+var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0,checkF=null,estT=-1,estS=1;
 
 function load(){
   var raw=null; try{raw=JSON.parse(localStorage.getItem(KEY))}catch(e){}
@@ -521,8 +555,13 @@ function pickFood(el,i){
 }
 function useCustom(){
   var n=document.getElementById('cfName').value.trim(),k=parseInt(document.getElementById('cfKcal').value,10);
-  if(!n||!k||k<=0){toast('名称和热量都要填');return}
+  if(!n){toast('写个名字就行,热量不知道可以留空');return}
   document.querySelectorAll('#foodChips .chip').forEach(function(c){c.classList.remove('sel')});
+  if(!k||k<=0){
+    var e=EST[estT>=0?estT:0];
+    k=e.k[estS]||e.k[1];
+    toast('热量留空,按「'+e.t+'」估了个大概');
+  }
   pick.food=n;pick.kcal=k;showCost();
 }
 function showCost(f){
@@ -575,37 +614,106 @@ function renderCheckChips(){
   if(c.dataset.done)return;
   c.dataset.done=1;
   c.innerHTML=FOODS.map(function(f,i){
-    return '<button class="chip" data-name="'+f.n+'" onclick="pickCheck(this,'+i+')">'+f.n+'</button>'}).join('');
+    return '<button class="chip" data-name="'+f.n+'" data-alias="'+((ALIAS_BY_IDX[i]||[]).join(' '))+'" onclick="pickCheck(this,'+i+')">'+f.n+'</button>'}).join('');
+}
+function renderEstChips(){
+  var t=document.getElementById('estType'),s=document.getElementById('estSize');
+  if(!t.dataset.done){
+    t.dataset.done=1;
+    t.innerHTML=EST.map(function(e,i){
+      return '<button class="chip" onclick="pickEstType(this,'+i+')">'+e.t+'</button>'}).join('');
+  }
+  if(!s.dataset.done){
+    s.dataset.done=1;
+    s.innerHTML=SIZES.map(function(x,i){
+      return '<button class="chip'+(i===estS?' sel':'')+'" onclick="pickEstSize(this,'+i+')">'+x+'</button>'}).join('');
+  }
 }
 function filterCheck(){
-  var q=(document.getElementById('ckSearch').value||'').trim();
+  var q=(document.getElementById('ckSearch').value||'').trim(),visible=0;
   document.querySelectorAll('#checkChips .chip').forEach(function(c){
-    c.style.display=(!q||c.dataset.name.indexOf(q)>-1)?'':'none';
+    var hay=(c.dataset.name||'')+' '+(c.dataset.alias||'');
+    var show=(!q||hay.indexOf(q)>-1);
+    c.style.display=show?'':'none'; if(show)visible++;
   });
+  var tip=document.getElementById('ckNoResult');
+  if(tip)tip.style.display=(q&&visible===0)?'':'none';
 }
 function pickCheck(el,i){
   document.querySelectorAll('#checkChips .chip').forEach(function(c){c.classList.remove('sel')});
   el.classList.add('sel'); checkF=FOODS[i];
+  estT=-1;
+  document.querySelectorAll('#estType .chip').forEach(function(c){c.classList.remove('sel')});
   document.getElementById('ckName').value='';document.getElementById('ckKcal').value='';
   renderCheck();
 }
-function pickCheckCustom(){
-  var n=document.getElementById('ckName').value.trim(),k=parseInt(document.getElementById('ckKcal').value,10);
-  if(!n||!k||k<=0){toast('名称和热量都要填');return}
+// 用户不知道热量:只选类型和份量,系统估算并补齐评级所需字段
+function estimate(t,s){
+  var e=EST[t]; if(!e)return null;
+  var name=(document.getElementById('ckName').value||'').trim()||e.t;
+  return {n:name,k:e.k[s],sugar:e.sugar,nutri:e.nutri,cat:e.cat,grp:e.grp||null,down:false,est:true};
+}
+function applyEstimate(){ var f=estimate(estT<0?0:estT,estS); if(f){checkF=f;renderCheck()} }
+function pickEstType(el,i){
+  document.querySelectorAll('#estType .chip').forEach(function(c){c.classList.remove('sel')});
+  if(el)el.classList.add('sel');
+  estT=i;
   document.querySelectorAll('#checkChips .chip').forEach(function(c){c.classList.remove('sel')});
-  checkF={n:n,k:k,sugar:false,nutri:0}; renderCheck();
+  applyEstimate();                 // 点一下类型就出结论,不用再点份量
+}
+function pickEstSize(el,i){
+  document.querySelectorAll('#estSize .chip').forEach(function(c){c.classList.remove('sel')});
+  if(el)el.classList.add('sel');
+  estS=i; if(estT<0)estT=0;
+  applyEstimate();
+}
+function pickCheckGuess(){
+  checkF={n:'没说明的东西',k:350,sugar:true,nutri:0,cat:'snack',grp:null,down:false,est:true,qualitative:true};
+  renderCheck();
+}
+function pickCheckExact(){
+  var raw=parseInt(document.getElementById('ckKcal').value,10);
+  if(!raw||raw<=0){toast('想精确查就填个 kcal;不知道就直接选上面的类型');return}
+  var e=estT>=0?EST[estT]:{t:'这个',sugar:false,nutri:0,cat:'snack'};
+  var name=(document.getElementById('ckName').value||'').trim()||e.t;
+  checkF={n:name,k:raw,sugar:e.sugar,nutri:e.nutri,cat:e.cat,grp:e.grp||null,down:false,est:false};
+  renderCheck();
+}
+function scrollResult(){
+  try{var cr=document.getElementById('checkResult');if(cr.scrollIntoView)cr.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
 }
 function renderCheck(){
   var box=document.getElementById('checkResult');
   if(!checkF){box.innerHTML='<div class="card"><div class="sub">选一个食物,下面会告诉你:该不该买、现在能不能吃、要是吃了怎么补救。</div></div>';return;}
   var f=checkF,km=kcalPerMin();
+
+  // 连类型都不想选:只给定性结论,不摆任何数字
+  if(f.qualitative){
+    var usedQ=todayEaten(),qQ=S.settings.dailyQuota,over=usedQ>=qQ;
+    box.innerHTML=
+      '<div class="card"><div class="row"><h2 style="margin-bottom:0">该买吗</h2>'+
+        '<span class="tiny" style="color:var(--warn)">红灯 · 建议别买</span></div>'+
+        '<div style="margin-top:10px;font-size:14px;font-weight:500;color:var(--warn)">没说是什么,就按最保守算</div>'+
+        '<div class="sub" style="margin-top:8px">含糖饮料、甜点、油炸这类,基本都不建议买。真要买,挑无糖、小份,或者水果那一档。</div></div>'+
+      '<div class="card"><div class="row"><h2 style="margin-bottom:0">现在能吃吗</h2>'+
+        '<span class="tiny" style="color:'+(over?'var(--warn)':'var(--amber)')+'">'+(over?'别吃':'限量吃')+'</span></div>'+
+        '<div class="tiny" style="margin-top:10px;color:var(--tx2)">· '+(over?'今天额度已用完,到此为止':'没说是什么,先按「有点代价」处理;想吃就挑小份')+'</div></div>'+
+      '<div class="card"><h2>吃完怎么补</h2>'+
+        '<div class="sub">饭后走 20–30 分钟,下一餐少吃点主食和油,别用饿一顿来抵。</div>'+
+        '<div class="tiny" style="margin-top:10px;color:var(--tx2)">体重看长期热量平衡,单顿不致命。别因为一次破功就放弃。</div></div>';
+    scrollResult(); return;
+  }
+
+  var isEst=!!f.est;
+  var kLo=Math.round(f.k*0.7),kHi=Math.round(f.k*1.3);
   var g=buyGrade(f);
   var alt=bestOf(f),altH='';
   if(alt&&f.k>=100){var sv=Math.round((f.k-alt.k)/km);
     altH='<div class="tiny" style="margin-top:10px;color:var(--ac)">同组最省:'+alt.n+'('+alt.k+'kcal) · 换它能省 '+sv+' 分钟快走</div>';}
+  var estTag=isEst?'<div class="tiny" style="margin-top:8px;color:var(--tx3)">按类型估算,热量约 ±30%,判断看量级就够</div>':'';
   var card1='<div class="card"><div class="row"><h2 style="margin-bottom:0">该买吗</h2>'+
     '<span class="tiny" style="color:'+lightColor(g)+'">'+lightWord(g)+' · 建议'+(g==='red'?'别买':(g==='yellow'?'限量买':'可买'))+'</span></div>'+
-    '<div style="margin-top:10px;font-size:14px;font-weight:500;color:'+lightColor(g)+'">'+f.n+'：'+buyReason(f)+'</div>'+altH+'</div>';
+    '<div style="margin-top:10px;font-size:14px;font-weight:500;color:'+lightColor(g)+'">'+f.n+'：'+buyReason(f)+'</div>'+altH+estTag+'</div>';
 
   var used=todayEaten(),q=S.settings.dailyQuota,night=isNight(Date.now());
   var eatG=g,notes=[];
@@ -617,16 +725,20 @@ function renderCheck(){
   var card2='<div class="card"><div class="row"><h2 style="margin-bottom:0">现在能吃吗</h2>'+
     '<span class="tiny" style="color:'+lightColor(eatG)+'">'+eatTxt+'</span></div>'+noteH+'</div>';
 
-  var ex=EXERCISE.map(function(e){var m=Math.round(f.k/(km*e.mul));
-    return '<div class="step"><div class="nm">'+e.n+'</div><div class="kc">'+m+' 分钟</div></div>';}).join('');
+  var ex=EXERCISE.map(function(e){
+    var m=Math.round(f.k/(km*e.mul));
+    var txt=isEst?(Math.round(kLo/(km*e.mul))+'–'+Math.round(kHi/(km*e.mul))+' 分钟'):(m+' 分钟');
+    return '<div class="step"><div class="nm">'+e.n+'</div><div class="kc">'+txt+'</div></div>';}).join('');
   var half=Math.round(f.k/2);
+  var halfTxt=isEst?(Math.round(kLo/2)+'–'+Math.round(kHi/2)+' kcal'):(half+' kcal');
+  var kcalTxt=isEst?('估计约 '+f.k+' kcal(±30%)'):('约 '+f.k+' kcal');
   var card3='<div class="card"><h2>吃完怎么补</h2>'+
-    '<div class="sub">这顿约 '+f.k+' kcal,选一个抵消:</div>'+ex+
-    '<div class="step"><div class="nm">或今天两餐各减</div><div class="kc">'+half+' kcal</div></div>'+
+    '<div class="sub">这顿'+kcalTxt+',选一个抵消:</div>'+ex+
+    '<div class="step"><div class="nm">或今天两餐各减</div><div class="kc">'+halfTxt+'</div></div>'+
     '<div class="tiny" style="margin-top:10px;color:var(--tx2)">体重看长期热量平衡,单顿不致命。用运动或后续少吃补回即可,别因为一次破功就放弃。</div></div>';
 
   box.innerHTML=card1+card2+card3;
-  try{var cr=document.getElementById('checkResult');if(cr.scrollIntoView)cr.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
+  scrollResult();
 }
 
 function renderStats(){
@@ -705,6 +817,7 @@ load();
 if(S.pending&&Date.now()-S.pending.start<95*1000){go('wait');runTimer()} else {S.pending=null}
 render();
 renderCheckChips();
+renderEstChips();
 renderCheck();
 route();
 window.onhashchange=route;
