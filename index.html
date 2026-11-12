@@ -106,6 +106,8 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
     <div class="tiny" style="margin-top:10px" id="todayNote"></div>
   </div>
 
+  <button class="btn pri" style="margin-top:14px;margin-bottom:4px" onclick="go('check')">查一下该不该买 / 吃 →</button>
+
   <div class="card" id="envCard"></div>
   <div class="card" id="stockCard"></div>
 
@@ -125,6 +127,23 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   </div>
 
   <button class="btn" style="margin-top:4px" onclick="go('tools')">当场想拦一下 →</button>
+</div>
+
+<div id="v-check" class="view">
+  <h1 style="margin-bottom:4px">查一下</h1>
+  <div class="sub">买之前、吃之前、吃完之后,都来这查一下。不用意志力,它替你判断。</div>
+  <input id="ckSearch" placeholder="搜一下,比如 奶茶 / 薯片" style="margin-top:14px" oninput="filterCheck()">
+  <div class="chips" id="checkChips" style="margin-top:10px"></div>
+  <div class="card" style="margin-top:12px">
+    <label class="f">库里没有?自己填(名称 + 热量 kcal)</label>
+    <div class="btn2">
+      <input id="ckName" placeholder="比如 蛋挞" style="flex:2">
+      <input id="ckKcal" type="number" inputmode="numeric" placeholder="kcal" style="flex:1">
+    </div>
+    <button class="btn" style="margin-top:10px" onclick="pickCheckCustom()">用这个查</button>
+  </div>
+  <div id="checkResult"></div>
+  <button class="btn ghost" style="margin-top:14px" onclick="navTo('home')">回到首页</button>
 </div>
 
 <div id="v-tools" class="view">
@@ -261,25 +280,33 @@ var KEY='mouthguard.v1';
 var DEF={dailyQuota:2,weightKg:60};
 // grp=同类,tier=档位(0 最差,越大越省);down=是否比同类最高热量版更低
 var FOODS=[
- {n:'奶茶(中杯全糖)',k:350,grp:'奶茶',tier:0,down:false},
- {n:'奶茶(少糖)',k:260,grp:'奶茶',tier:1,down:true},
- {n:'奶茶(无糖/纯茶)',k:30,grp:'奶茶',tier:2,down:true},
- {n:'美式咖啡',k:15,grp:'奶茶',tier:3,down:true},
- {n:'可乐 500ml',k:210,grp:'可乐',tier:0,down:false},
- {n:'零度可乐',k:5,grp:'可乐',tier:1,down:true},
- {n:'薯片一大包',k:550,grp:'薯片',tier:0,down:false},
- {n:'薯片一小包',k:160,grp:'薯片',tier:1,down:true},
- {n:'蛋糕一块',k:300,down:false},{n:'巧克力',k:270,down:false},
- {n:'冰淇淋',k:250,down:false},{n:'炸鸡一块',k:250,down:false},
- {n:'手抓饼',k:400,down:false},{n:'面包一个',k:280,down:false},
- {n:'泡面',k:450,down:false},{n:'果汁',k:180,down:false},
- {n:'坚果一小把',k:120,down:true},{n:'饼干两片',k:100,down:true},
- {n:'酸奶一杯',k:90,down:true},{n:'水果一份',k:80,down:true},
- {n:'烧烤一串',k:120,down:false},{n:'糖果',k:100,down:false}
+ {n:'奶茶(中杯全糖)',k:350,grp:'奶茶',tier:0,down:false,cat:'drink',sugar:true,nutri:0},
+ {n:'奶茶(少糖)',k:260,grp:'奶茶',tier:1,down:true,cat:'drink',sugar:true,nutri:0},
+ {n:'奶茶(无糖/纯茶)',k:30,grp:'奶茶',tier:2,down:true,cat:'drink',sugar:false,nutri:1},
+ {n:'美式咖啡',k:15,grp:'奶茶',tier:3,down:true,cat:'drink',sugar:false,nutri:1},
+ {n:'可乐 500ml',k:210,grp:'可乐',tier:0,down:false,cat:'drink',sugar:true,nutri:0},
+ {n:'零度可乐',k:5,grp:'可乐',tier:1,down:true,cat:'drink',sugar:false,nutri:0},
+ {n:'薯片一大包',k:550,grp:'薯片',tier:0,down:false,cat:'snack',sugar:false,nutri:0},
+ {n:'薯片一小包',k:160,grp:'薯片',tier:1,down:true,cat:'snack',sugar:false,nutri:0},
+ {n:'蛋糕一块',k:300,cat:'snack',sugar:true,nutri:0,down:false},
+ {n:'巧克力',k:270,cat:'snack',sugar:true,nutri:0,down:false},
+ {n:'冰淇淋',k:250,cat:'snack',sugar:true,nutri:0,down:false},
+ {n:'炸鸡一块',k:250,cat:'snack',sugar:false,nutri:1,down:false},
+ {n:'手抓饼',k:400,cat:'snack',sugar:false,nutri:1,down:false},
+ {n:'面包一个',k:280,cat:'snack',sugar:false,nutri:1,down:false},
+ {n:'泡面',k:450,cat:'meal',sugar:false,nutri:1,down:false},
+ {n:'果汁',k:180,cat:'drink',sugar:true,nutri:1,down:false},
+ {n:'坚果一小把',k:120,cat:'snack',sugar:false,nutri:2,down:true},
+ {n:'饼干两片',k:100,cat:'snack',sugar:true,nutri:0,down:true},
+ {n:'酸奶一杯',k:90,cat:'snack',sugar:true,nutri:2,down:true},
+ {n:'水果一份',k:80,cat:'fruit',sugar:true,nutri:3,down:true},
+ {n:'烧烤一串',k:120,cat:'snack',sugar:false,nutri:1,down:false},
+ {n:'糖果',k:100,cat:'snack',sugar:true,nutri:0,down:false}
 ];
 var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
 var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
 var LADDER=[{n:'全糖奶茶',k:350},{n:'少糖奶茶',k:260},{n:'无糖 / 纯茶',k:30},{n:'美式咖啡',k:15}];
+var EXERCISE=[{n:'快走',mul:1.0},{n:'慢跑',mul:2.5},{n:'跳绳',mul:2.7},{n:'游泳',mul:2.0},{n:'骑行',mul:1.7}];
 var ENV=[
  {k:'hide',t:'零食放进不透明罐 / 柜子最上层'},
  {k:'clear',t:'桌面茶几清空,不放吃的'},
@@ -287,7 +314,7 @@ var ENV=[
  {k:'swap',t:'原位放了替代物(口香糖 / 水 / 水果)'},
  {k:'lock',t:'锁屏壁纸设了预先承诺(奶茶点无糖)'}
 ];
-var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0;
+var S,pick={food:null,kcal:0,emo:''},timer=null,buyTimer=null,buyStart=0,checkF=null;
 
 function load(){
   var raw=null; try{raw=JSON.parse(localStorage.getItem(KEY))}catch(e){}
@@ -330,6 +357,30 @@ function downRate(){
   var eat=S.events.filter(function(e){return e.outcome==='eaten'});
   if(!eat.length)return null;
   return Math.round(eat.filter(function(e){return e.down}).length/eat.length*100);
+}
+// 红黄绿灯:基于含糖、营养度、热量自动评,不用手标 22 条
+function buyGrade(f){
+  if(f.nutri>=2)return 'green';
+  if(f.sugar===false&&f.k<=60)return 'green';
+  if(f.sugar&&f.k>=200)return 'red';
+  if(f.k>=350)return 'red';
+  if(f.sugar||f.k>=150)return 'yellow';
+  return 'green';
+}
+function lightColor(g){return g==='red'?'var(--warn)':(g==='yellow'?'var(--amber)':'var(--ac)')}
+function lightWord(g){return g==='red'?'红灯':(g==='yellow'?'黄灯':'绿灯')}
+function buyReason(f){
+  var g=buyGrade(f);
+  if(g==='red')return (f.sugar&&f.k>=200)
+    ? ('高糖 + '+f.k+'kcal 空热量,几乎不顶饱,喝了还得再吃')
+    : ('纯高热量空热量 '+f.k+'kcal,得运动好久才抵消');
+  if(g==='yellow')return f.sugar?'有糖但热量不算离谱,控制量就行':'热量不低,偶尔可以,别天天';
+  return f.nutri>=2?'有营养,可以常备':'低热量 / 无糖,基本放心';
+}
+function bestOf(f){
+  if(!f.grp)return null;
+  var same=FOODS.filter(function(x){return x.grp===f.grp}).sort(function(a,b){return a.k-b.k});
+  return same[0].k<f.k?same[0]:null;
 }
 
 function go(v){
@@ -587,6 +638,64 @@ function exportData(){
 }
 function wipe(){ if(confirm('确定清空所有记录?不可恢复')){S.events=[];S.best=0;save();render();go('home')} }
 
+function renderCheckChips(){
+  var c=document.getElementById('checkChips');
+  if(c.dataset.done)return;
+  c.dataset.done=1;
+  c.innerHTML=FOODS.map(function(f,i){
+    return '<button class="chip" data-name="'+f.n+'" onclick="pickCheck(this,'+i+')">'+f.n+'</button>'}).join('');
+}
+function filterCheck(){
+  var q=(document.getElementById('ckSearch').value||'').trim();
+  document.querySelectorAll('#checkChips .chip').forEach(function(c){
+    c.style.display=(!q||c.dataset.name.indexOf(q)>-1)?'':'none';
+  });
+}
+function pickCheck(el,i){
+  document.querySelectorAll('#checkChips .chip').forEach(function(c){c.classList.remove('sel')});
+  el.classList.add('sel'); checkF=FOODS[i];
+  document.getElementById('ckName').value='';document.getElementById('ckKcal').value='';
+  renderCheck();
+}
+function pickCheckCustom(){
+  var n=document.getElementById('ckName').value.trim(),k=parseInt(document.getElementById('ckKcal').value,10);
+  if(!n||!k||k<=0){toast('名称和热量都要填');return}
+  document.querySelectorAll('#checkChips .chip').forEach(function(c){c.classList.remove('sel')});
+  checkF={n:n,k:k,sugar:false,nutri:0}; renderCheck();
+}
+function renderCheck(){
+  var box=document.getElementById('checkResult');
+  if(!checkF){box.innerHTML='<div class="card"><div class="sub">选一个食物,下面会告诉你:该不该买、现在能不能吃、要是吃了怎么补救。</div></div>';return;}
+  var f=checkF,km=kcalPerMin();
+  var g=buyGrade(f);
+  var alt=bestOf(f),altH='';
+  if(alt&&f.k>=100){var sv=Math.round((f.k-alt.k)/km);
+    altH='<div class="tiny" style="margin-top:10px;color:var(--ac)">同组最省:'+alt.n+'('+alt.k+'kcal) · 换它能省 '+sv+' 分钟快走</div>';}
+  var card1='<div class="card"><div class="row"><h2 style="margin-bottom:0">该买吗</h2>'+
+    '<span class="tiny" style="color:'+lightColor(g)+'">'+lightWord(g)+' · 建议'+(g==='red'?'别买':(g==='yellow'?'限量买':'可买'))+'</span></div>'+
+    '<div style="margin-top:10px;font-size:14px;font-weight:500;color:'+lightColor(g)+'">'+f.n+'：'+buyReason(f)+'</div>'+altH+'</div>';
+
+  var used=todayEaten(),q=S.settings.dailyQuota,night=isNight(Date.now());
+  var eatG=g,notes=[];
+  if(used>=q){eatG='red';notes.push('今天额度已用完('+used+'/'+q+'),再吃就是超支,今天到此为止');}
+  else if(night){notes.push('现在是深夜,代谢差,吃了更容易囤');if(eatG==='green')eatG='yellow';}
+  if(f.down&&eatG!=='red')notes.push('这是降级版,可以吃,但点到最低那档');
+  var eatTxt=eatG==='red'?'别吃':(eatG==='yellow'?'限量吃':'可以吃');
+  var noteH=notes.length?'<div class="tiny" style="margin-top:10px;color:var(--tx2)">· '+notes.join('<br>· ')+'</div>':'';
+  var card2='<div class="card"><div class="row"><h2 style="margin-bottom:0">现在能吃吗</h2>'+
+    '<span class="tiny" style="color:'+lightColor(eatG)+'">'+eatTxt+'</span></div>'+noteH+'</div>';
+
+  var ex=EXERCISE.map(function(e){var m=Math.round(f.k/(km*e.mul));
+    return '<div class="step"><div class="nm">'+e.n+'</div><div class="kc">'+m+' 分钟</div></div>';}).join('');
+  var half=Math.round(f.k/2);
+  var card3='<div class="card"><h2>吃完怎么补</h2>'+
+    '<div class="sub">这顿约 '+f.k+' kcal,选一个抵消:</div>'+ex+
+    '<div class="step"><div class="nm">或今天两餐各减</div><div class="kc">'+half+' kcal</div></div>'+
+    '<div class="tiny" style="margin-top:10px;color:var(--tx2)">体重看长期热量平衡,单顿不致命。用运动或后续少吃补回即可,别因为一次破功就放弃。</div></div>';
+
+  box.innerHTML=card1+card2+card3;
+}
+
 function renderStats(){
   var ev=S.events,eat=ev.filter(function(e){return e.outcome==='eaten'});
   document.getElementById('tTotal').textContent=ev.length;
@@ -667,6 +776,8 @@ function clearHash(){
 load();
 if(S.pending&&Date.now()-S.pending.start<95*1000){go('wait');runTimer()} else {S.pending=null}
 render();
+renderCheckChips();
+renderCheck();
 route();
 window.onhashchange=route;
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}
