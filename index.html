@@ -150,6 +150,8 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   </div>
   <div id="checkResult"></div>
 
+  <button class="btn" style="margin-top:14px" onclick="navTo('list')">减肥能吃哪些?打开清单 →</button>
+
   <div class="card" style="margin-top:14px">
     <h2>今天吃了几次</h2>
     <div class="sub">睡前花 10 秒回忆一下就行,不用当场记</div>
@@ -180,6 +182,14 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
   <div class="sub">偶尔你恰好想起它的时候,这两个还在。想不起来也没关系,那本来就不是它们的主场。</div>
   <button class="btn pri" style="margin-top:18px" onclick="startCrave()">我又想吃了 · 等 90 秒</button>
   <button class="btn" style="margin-top:10px" onclick="startBuy()">我想买 · 冷静 3 分钟</button>
+  <button class="btn ghost" style="margin-top:14px" onclick="navTo('home')">回到首页</button>
+</div>
+
+<div id="v-list" class="view">
+  <h1 style="margin-bottom:4px">能吃清单</h1>
+  <div class="sub">点开就看,不用填任何东西。买之前照着对一下:绿灯放心拿,黄灯少拿点,红灯放回货架。</div>
+  <div class="tiny" style="margin-top:10px">按常见份量的热量和营养排的,不用记数字 —— 记住颜色就行。点任意一样能看详细判断。</div>
+  <div id="listBody" style="margin-top:14px"></div>
   <button class="btn ghost" style="margin-top:14px" onclick="navTo('home')">回到首页</button>
 </div>
 
@@ -317,6 +327,34 @@ var FOODS=[
  {n:'水果一份',k:80,cat:'fruit',sugar:true,nutri:3,down:true},
  {n:'烧烤一串',k:120,cat:'snack',sugar:false,nutri:1,down:false},
  {n:'糖果',k:100,cat:'snack',sugar:true,nutri:0,down:false}
+];
+// 减肥期间的食物清单:g=绿灯放心吃/y=黄灯控制量/r=红灯尽量别碰
+// 覆盖便利店/超市/食堂/家常菜/奶茶店等真实场景。k=常见份量热量,sugar/nutri 供点击后复用评级
+var EATLIST=[
+ {g:'g',n:'白煮蛋 / 茶叶蛋',k:70,sugar:false,nutri:2,tip:'一个就顶饱,蛋白高'},
+ {g:'g',n:'无糖豆浆',k:60,sugar:false,nutri:2,tip:'便利店的就行,别选甜的'},
+ {g:'g',n:'纯牛奶 / 无糖酸奶',k:110,sugar:false,nutri:2,tip:'补蛋白,比果汁强'},
+ {g:'g',n:'小番茄 / 黄瓜',k:30,sugar:false,nutri:3,tip:'嘴馋时抓这个,随便吃'},
+ {g:'g',n:'苹果 / 橙子 / 猕猴桃',k:80,sugar:true,nutri:3,tip:'整果比榨汁好,有纤维'},
+ {g:'g',n:'白灼虾 / 鸡胸肉',k:120,sugar:false,nutri:2,tip:'食堂挑蒸煮的,不挑油炸的'},
+ {g:'g',n:'清蒸鱼 / 豆腐',k:140,sugar:false,nutri:2,tip:'正经吃这个,别用零食顶饭'},
+ {g:'g',n:'无糖茶 / 美式咖啡',k:15,sugar:false,nutri:1,tip:'想喝奶茶时先来这个'},
+ {g:'g',n:'小份坚果',k:120,sugar:false,nutri:2,tip:'一小把就停,别抱罐吃'},
+ {g:'y',n:'玉米 / 红薯',k:180,sugar:false,nutri:1,tip:'能当主食,吃了就别再吃米饭'},
+ {g:'y',n:'全麦面包',k:200,sugar:false,nutri:1,tip:'两片为限,配蛋白才顶饱'},
+ {g:'y',n:'少糖奶茶',k:260,sugar:true,nutri:0,tip:'真想喝就点少糖小杯'},
+ {g:'y',n:'鲜榨果汁',k:180,sugar:true,nutri:1,tip:'不如直接吃水果'},
+ {g:'y',n:'含糖酸奶 / 乳酸菌',k:120,sugar:true,nutri:2,tip:'有营养但糖不少,别天天'},
+ {g:'y',n:'寿司 / 饭团',k:250,sugar:false,nutri:1,tip:'便利店应急可以,别配饮料'},
+ {g:'r',n:'全糖奶茶 / 加料',k:450,sugar:true,nutri:0,tip:'一杯顶一顿,喝完还得再吃'},
+ {g:'r',n:'可乐 / 雪碧',k:210,sugar:true,nutri:0,tip:'纯糖水,换零度或无糖茶'},
+ {g:'r',n:'薯片一大包',k:550,sugar:false,nutri:0,tip:'一包吃不完,剩下天天跟它较劲'},
+ {g:'r',n:'蛋糕 / 蛋挞 / 泡芙',k:300,sugar:true,nutri:0,tip:'糖油混合,最不容易饱'},
+ {g:'r',n:'巧克力 / 糖果',k:270,sugar:true,nutri:0,tip:'一小块解馋可以,别整盒'},
+ {g:'r',n:'冰淇淋 / 雪糕',k:250,sugar:true,nutri:0,tip:'糖+奶油,吃完还想吃'},
+ {g:'r',n:'炸鸡 / 薯条',k:400,sugar:false,nutri:1,tip:'油炸的换成白灼/烤的'},
+ {g:'r',n:'泡面',k:450,sugar:false,nutri:1,tip:'真饿就吃个饭团+鸡蛋'},
+ {g:'r',n:'烧烤 / 烤肠',k:300,sugar:false,nutri:1,tip:'重油重盐,还容易停不下来'}
 ];
 var EMOS=['无聊','压力','焦虑','累','开心','纯习惯','社交'];
 var SLOTS=[['深夜',21,6],['清晨',6,9],['上午',9,11],['午间',11,14],['下午',14,18],['傍晚',18,21]];
@@ -875,6 +913,39 @@ function renderCheck(){
   scrollResult();
 }
 
+function renderList(){
+  var groups=[
+    {g:'g',title:'绿灯 · 放心拿',color:'var(--ac)',
+     head:'这些东西减肥期随便吃,不用算热量。',foot:'正餐吃够蛋白和蔬菜,零食冲动会自己少一半。'},
+    {g:'y',title:'黄灯 · 少拿点',color:'var(--amber)',
+     head:'不是不能吃,是别当水喝、别天天吃。',foot:'拿一样就别再拿第二样;吃了黄灯,那顿主食减一点。'},
+    {g:'r',title:'红灯 · 放回货架',color:'var(--warn)',
+     head:'这些最容易吃超,而且吃完还饿。',foot:'真想吃就挑小份、选无糖版 —— 降级比硬戒现实。'}
+  ];
+  var h='';
+  groups.forEach(function(gr){
+    var items=EATLIST.filter(function(x){return x.g===gr.g});
+    h+='<div class="card"><div class="row"><h2 style="margin-bottom:0;color:'+gr.color+'">'+gr.title+'</h2>'+
+       '<span class="tiny">'+items.length+' 样</span></div>'+
+       '<div class="sub" style="margin:8px 0 4px">'+gr.head+'</div>';
+    items.forEach(function(x){
+      h+='<div class="srow" style="cursor:pointer" onclick="pickListFood(\''+x.n+'\')">'+
+         '<div style="flex:1;font-size:13px">'+x.n+'</div>'+
+         '<div style="text-align:right"><span class="tiny">'+x.tip+'</span><br>'+
+         '<span class="tiny" style="color:'+gr.color+'">'+x.k+' kcal · 点开看 →</span></div></div>';
+    });
+    h+='<div class="tiny" style="margin-top:10px;color:'+gr.color+'">'+gr.foot+'</div></div>';
+  });
+  document.getElementById('listBody').innerHTML=h;
+}
+function pickListFood(name){
+  var x=EATLIST.filter(function(y){return y.n===name})[0];
+  if(!x)return;
+  estT=-1;
+  checkF={n:x.n,k:x.k,sugar:x.sugar,nutri:x.nutri,
+          cat:(x.sugar?'drink':'snack'),grp:null,down:false,est:false};
+  navTo('home'); renderCheck();
+}
 function renderStats(){
   var ev=S.events,eat=ev.filter(function(e){return e.outcome==='eaten'});
   document.getElementById('tTotal').textContent=ev.length;
@@ -927,15 +998,19 @@ function renderStats(){
 }
 
 var NAV='<div class="nav"><button class="nb nb-home on" onclick="navTo(\'home\')">首页</button>'+
+  '<button class="nb nb-list" onclick="navTo(\'list\')">清单</button>'+
   '<button class="nb nb-stats" onclick="navTo(\'stats\')">复盘</button></div>';
 document.getElementById('v-home').insertAdjacentHTML('beforeend',NAV);
 document.querySelector('#v-stats h1').insertAdjacentHTML('afterend',NAV);
+document.querySelector('#v-list h1').insertAdjacentHTML('afterend',NAV);
 document.getElementById('v-result').insertAdjacentHTML('beforeend',
   '<button class="btn ghost" style="margin-top:14px" onclick="go(\'home\')">返回首页</button>');
 function navTo(v){
   document.querySelectorAll('.nb-home').forEach(function(b){b.classList.toggle('on',v==='home')});
+  document.querySelectorAll('.nb-list').forEach(function(b){b.classList.toggle('on',v==='list')});
   document.querySelectorAll('.nb-stats').forEach(function(b){b.classList.toggle('on',v==='stats')});
   if(v==='stats')renderStats();
+  if(v==='list')renderList();
   go(v); if(v==='home')render();
 }
 
