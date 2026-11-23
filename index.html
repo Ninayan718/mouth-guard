@@ -119,6 +119,33 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
       <input id="ckKcal" type="number" inputmode="numeric" placeholder="可选:填 kcal" style="flex:1">
       <button class="btn ghost" style="flex:1" onclick="pickCheckExact()">用这个精确查</button>
     </div>
+    <div class="sep"></div>
+    <div class="row"><h2 style="margin-bottom:0">有包装?照着营养表算</h2>
+      <button class="btn ghost" id="nuToggle" style="width:auto;padding:6px 12px;font-size:12px" onclick="toggleNutri()">展开</button></div>
+    <div id="nutriBox" style="display:none;margin-top:8px">
+      <div class="tiny">只看包装「营养成分表」的能量那一行,不用全抄。kJ 会自动 ÷4.184 换算。</div>
+      <label class="f">能量</label>
+      <div class="btn2">
+        <input id="nuEnergy" type="number" inputmode="decimal" placeholder="比如 2030" style="flex:2">
+        <select id="nuUnit" style="flex:1">
+          <option value="kj100">kJ / 100g</option>
+          <option value="kcal100">kcal / 100g</option>
+          <option value="kjserve">kJ / 每份</option>
+          <option value="kcalserve">kcal / 每份</option>
+        </select>
+      </div>
+      <label class="f">这一份多少 g/ml(整包就填净含量)</label>
+      <input id="nuGram" type="number" inputmode="decimal" placeholder="默认 100">
+      <button class="btn ghost" id="macroToggle" style="margin-top:10px" onclick="toggleMacro()">蛋白质 / 脂肪 / 碳水(可选,填了更准)</button>
+      <div id="macroBox" style="display:none">
+        <div class="btn2" style="margin-top:8px">
+          <input id="nuP" type="number" inputmode="decimal" placeholder="蛋白 g" style="flex:1">
+          <input id="nuF" type="number" inputmode="decimal" placeholder="脂肪 g" style="flex:1">
+          <input id="nuC" type="number" inputmode="decimal" placeholder="碳水 g" style="flex:1">
+        </div>
+      </div>
+      <button class="btn pri" style="margin-top:12px" onclick="calcNutrition()">算出热量和能吃多少</button>
+    </div>
   </div>
   <div id="checkResult"></div>
 
@@ -232,6 +259,8 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
     <h2>设置</h2>
     <label class="f">每日额度(次)</label>
     <input id="setQuota" type="number" inputmode="numeric" min="0" max="10">
+    <label class="f">每次算「一份」的热量(kcal),默认 150</label>
+    <input id="setServing" type="number" inputmode="numeric" min="50" max="600">
     <label class="f">体重(kg),用于代价换算</label>
     <input id="setWeight" type="number" inputmode="numeric" min="30" max="150">
     <button class="btn pri" style="margin-top:14px" onclick="saveSettings()">保存设置</button>
@@ -262,7 +291,7 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
 
 <script>
 var KEY='mouthguard.v1';
-var DEF={dailyQuota:2,weightKg:60};
+var DEF={dailyQuota:2,weightKg:60,servingKcal:150};
 // grp=同类,tier=档位(0 最差,越大越省);down=是否比同类最高热量版更低
 var FOODS=[
  {n:'奶茶(中杯全糖)',k:350,grp:'奶茶',tier:0,down:false,cat:'drink',sugar:true,nutri:0},
@@ -332,7 +361,11 @@ function save(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){} }
 
 function dkey(t){var d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
 function p2(n){return n<10?'0'+n:''+n}
-function todayEaten(){var k=dkey(Date.now());return S.events.filter(function(e){return e.outcome==='eaten'&&dkey(e.ts)===k}).length}
+function todayEaten(){
+  var k=dkey(Date.now()),d=S.days[k];
+  if(d!==undefined)return d;  // 睡前补记是主要记录方式,优先用
+  return S.events.filter(function(e){return e.outcome==='eaten'&&dkey(e.ts)===k}).length;
+}
 function isNight(t){var h=new Date(t).getHours();return h>=21||h<6}
 function kcalPerMin(){return S.settings.weightKg*0.067}
 function slotOf(t){
@@ -598,8 +631,10 @@ function saveEaten(){
 function saveSettings(){
   var q=parseInt(document.getElementById('setQuota').value,10);
   var w=parseInt(document.getElementById('setWeight').value,10);
+  var sv=parseInt(document.getElementById('setServing').value,10);
   if(!isNaN(q)&&q>=0)S.settings.dailyQuota=q;
   if(!isNaN(w)&&w>0)S.settings.weightKg=w;
+  if(!isNaN(sv)&&sv>0)S.settings.servingKcal=sv;
   save(); render(); toast('已保存');
 }
 function exportData(){
@@ -679,6 +714,79 @@ function pickCheckExact(){
   checkF={n:name,k:raw,sugar:e.sugar,nutri:e.nutri,cat:e.cat,grp:e.grp||null,down:false,est:false};
   renderCheck();
 }
+
+// 营养成分表核算:纯计算,输入能量+单位+份量,输出整份kcal/每100g kcal
+// unit: kj100 | kcal100 | kjserve | kcalserve
+function nutritionCalc(raw,unit,gram){
+  var v=parseFloat(raw);
+  var g=parseFloat(gram);
+  if(isNaN(v)||v<0)return null;          // 必须填了能量数字
+  if(!(g>0))g=100;                        // 份量默认100g
+  if(g>5000)g=5000;                       // 防手滑
+  var per100;
+  if(unit==='kj100')per100=v/4.184;
+  else if(unit==='kcal100')per100=v;
+  else if(unit==='kjserve')per100=(v/4.184)*100/g;
+  else if(unit==='kcalserve')per100=v*100/g;
+  else return null;
+  if(!(per100>0)||per100>2000)return null; // 明显不合理
+  return {per100:per100,gram:g,total:Math.round(per100*g/100)};
+}
+// 用三大营养素(每100g)交叉核算,没填能量时的兜底
+function macroKcal(p,f,c){return p*4+f*9+c*4}
+function toggleNutri(){
+  var b=document.getElementById('nutriBox'),btn=document.getElementById('nuToggle');
+  var on=b.style.display==='none'; b.style.display=on?'block':'none';
+  btn.textContent=on?'收起':'展开';
+}
+function toggleMacro(){
+  var b=document.getElementById('macroBox'),btn=document.getElementById('macroToggle');
+  var on=b.style.display==='none'; b.style.display=on?'block':'none';
+  btn.textContent=on?'收起三大营养素':'蛋白质 / 脂肪 / 碳水(可选,填了更准)';
+}
+function calcNutrition(){
+  var unit=document.getElementById('nuUnit').value;
+  var raw=document.getElementById('nuEnergy').value;
+  var gram=document.getElementById('nuGram').value;
+  var r=nutritionCalc(raw,unit,gram);
+  var p=parseFloat(document.getElementById('nuP').value)||0;
+  var f=parseFloat(document.getElementById('nuF').value)||0;
+  var c=parseFloat(document.getElementById('nuC').value)||0;
+  var fromMacro=macroKcal(p,f,c);
+  if(!r){
+    // 能量没填,但三大营养素填了:按每100g算
+    if(fromMacro>0&&fromMacro<=2000){
+      var g=parseFloat(gram); if(!(g>0))g=100;
+      r={per100:fromMacro,gram:g,total:Math.round(fromMacro*g/100)};
+    } else {toast('填能量那一行就行;或者填蛋白/脂肪/碳水');return}
+  }
+  var nt=estT>=0?EST[estT]:null;
+  var sugar,nutri,cat;
+  if(nt){sugar=nt.sugar;nutri=nt.nutri;cat=nt.cat}
+  else{
+    // 没选类型时从营养表推断:蛋白高=有营养;碳水高=含糖
+    nutri=p>=6?2:(p>=3?1:0);
+    sugar=(fromMacro>0&&c>=fromMacro*0.3)||c>=45;
+    cat='snack';
+  }
+  var name=(document.getElementById('ckName').value||'').trim()||'这个';
+  checkF={n:name,k:r.total,sugar:sugar,nutri:nutri,cat:cat,grp:null,down:false,
+          est:false,calc:true,per100:r.per100,gram:r.gram};
+  renderCheck();
+  toast('算出这份 '+r.total+' kcal');
+}
+// 按今日剩余额度,算这个食物最多还能吃多少克
+function portionsLeft(f){
+  var used=todayEaten(),q=S.settings.dailyQuota;
+  var left=Math.max(0,q-used);
+  var budget=left*S.settings.servingKcal;
+  var g=buyGrade(f);
+  var per100=f.per100||Math.round(f.k/((f.gram||100)/100));
+  if(!(per100>0))per100=1;
+  var grams=Math.floor(budget/per100*100);
+  var whole=f.gram||100;
+  return {left:left,budget:budget,grams:grams,whole:whole,used:used,quota:q,grade:g};
+}
 function scrollResult(){
   try{var cr=document.getElementById('checkResult');if(cr.scrollIntoView)cr.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}
 }
@@ -737,7 +845,25 @@ function renderCheck(){
     '<div class="step"><div class="nm">或今天两餐各减</div><div class="kc">'+halfTxt+'</div></div>'+
     '<div class="tiny" style="margin-top:10px;color:var(--tx2)">体重看长期热量平衡,单顿不致命。用运动或后续少吃补回即可,别因为一次破功就放弃。</div></div>';
 
-  box.innerHTML=card1+card2+card3;
+  var card4='';
+  if(f.calc){
+    var pl=portionsLeft(f);
+    var maxG=Math.min(pl.grams,pl.whole);
+    var ratio=Math.round(maxG/pl.whole*100);
+    var verdict=pl.left<=0
+      ? '<div style="font-size:14px;font-weight:600;color:var(--warn)">今天额度已用完,别吃了</div>'+
+        '<div class="sub" style="margin-top:6px">今天已经记了 '+pl.used+' / '+pl.quota+' 次。剩下的明天再说,睡前的东西不会消失。</div>'
+      : (pl.grams<=0
+        ? '<div style="font-size:14px;font-weight:600;color:var(--warn)">这一份就超预算了,先别开</div>'+
+          '<div class="sub" style="margin-top:6px">这份 '+f.k+' kcal,已经超过你一次的量('+pl.budget+' kcal)。真想吃就分两次,今天只吃一小口。</div>'
+        : '<div style="font-size:14px;font-weight:600;color:'+lightColor(g)+'">这次最多吃 '+maxG+' g</div>'+
+          '<div class="sub" style="margin-top:6px">这份一共 '+pl.whole+' g / '+f.k+' kcal。按你每次约 '+pl.budget+' kcal 的额度,吃到 '+maxG+' g 就停(约整份的 '+ratio+'%)。'+
+          (maxG<pl.whole?'剩下的收起来,别放在手边。':'整份吃完也在额度内,别再加第二份。')+'</div>');
+    card4='<div class="card" style="border-color:var(--ac)"><h2>能吃多少</h2>'+verdict+
+      '<div class="tiny" style="margin-top:10px">每 100g 约 '+Math.round(f.per100)+' kcal · 这个数按包装标签算,比估算准。额度可在复盘页改。</div></div>';
+  }
+
+  box.innerHTML=card1+card2+card3+card4;
   scrollResult();
 }
 
@@ -789,6 +915,7 @@ function renderStats(){
   }
   document.getElementById('setQuota').value=S.settings.dailyQuota;
   document.getElementById('setWeight').value=S.settings.weightKg;
+  document.getElementById('setServing').value=S.settings.servingKcal;
 }
 
 var NAV='<div class="nav"><button class="nb nb-home on" onclick="navTo(\'home\')">首页</button>'+
