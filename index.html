@@ -136,12 +136,13 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
       </div>
       <label class="f">这一份多少 g/ml(整包就填净含量)</label>
       <input id="nuGram" type="number" inputmode="decimal" placeholder="默认 100">
-      <button class="btn ghost" id="macroToggle" style="margin-top:10px" onclick="toggleMacro()">蛋白质 / 脂肪 / 碳水(可选,填了更准)</button>
+      <button class="btn ghost" id="macroToggle" style="margin-top:10px" onclick="toggleMacro()">蛋白质 / 脂肪 / 碳水 / 钠(可选,填了更准)</button>
       <div id="macroBox" style="display:none">
         <div class="btn2" style="margin-top:8px">
           <input id="nuP" type="number" inputmode="decimal" placeholder="蛋白 g" style="flex:1">
           <input id="nuF" type="number" inputmode="decimal" placeholder="脂肪 g" style="flex:1">
           <input id="nuC" type="number" inputmode="decimal" placeholder="碳水 g" style="flex:1">
+          <input id="nuNa" type="number" inputmode="decimal" placeholder="钠 mg" style="flex:1">
         </div>
       </div>
       <button class="btn pri" style="margin-top:12px" onclick="calcNutrition()">算出热量和能吃多少</button>
@@ -261,8 +262,8 @@ padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:opacity
     <input id="setQuota" type="number" inputmode="numeric" min="0" max="10">
     <label class="f">每次算「一份」的热量(kcal),默认 150</label>
     <input id="setServing" type="number" inputmode="numeric" min="50" max="600">
-    <label class="f">体重(kg),用于代价换算</label>
-    <input id="setWeight" type="number" inputmode="numeric" min="30" max="150">
+    <label class="f">体重(kg),用于代价换算(可填小数)</label>
+    <input id="setWeight" type="number" inputmode="decimal" step="0.1" min="30" max="150">
     <button class="btn pri" style="margin-top:14px" onclick="saveSettings()">保存设置</button>
     <div class="sep"></div>
     <button class="btn ghost" onclick="exportData()">导出数据(JSON)</button>
@@ -630,10 +631,10 @@ function saveEaten(){
 }
 function saveSettings(){
   var q=parseInt(document.getElementById('setQuota').value,10);
-  var w=parseInt(document.getElementById('setWeight').value,10);
+  var w=parseFloat(document.getElementById('setWeight').value);
   var sv=parseInt(document.getElementById('setServing').value,10);
   if(!isNaN(q)&&q>=0)S.settings.dailyQuota=q;
-  if(!isNaN(w)&&w>0)S.settings.weightKg=w;
+  if(!isNaN(w)&&w>0)S.settings.weightKg=Math.round(w*10)/10;  // 保留1位小数
   if(!isNaN(sv)&&sv>0)S.settings.servingKcal=sv;
   save(); render(); toast('已保存');
 }
@@ -752,6 +753,7 @@ function calcNutrition(){
   var p=parseFloat(document.getElementById('nuP').value)||0;
   var f=parseFloat(document.getElementById('nuF').value)||0;
   var c=parseFloat(document.getElementById('nuC').value)||0;
+  var na=parseFloat(document.getElementById('nuNa').value)||0;   // 钠 mg/100g
   var fromMacro=macroKcal(p,f,c);
   if(!r){
     // 能量没填,但三大营养素填了:按每100g算
@@ -771,7 +773,7 @@ function calcNutrition(){
   }
   var name=(document.getElementById('ckName').value||'').trim()||'这个';
   checkF={n:name,k:r.total,sugar:sugar,nutri:nutri,cat:cat,grp:null,down:false,
-          est:false,calc:true,per100:r.per100,gram:r.gram};
+          est:false,calc:true,per100:r.per100,gram:r.gram,na:na};
   renderCheck();
   toast('算出这份 '+r.total+' kcal');
 }
@@ -859,7 +861,13 @@ function renderCheck(){
         : '<div style="font-size:14px;font-weight:600;color:'+lightColor(g)+'">这次最多吃 '+maxG+' g</div>'+
           '<div class="sub" style="margin-top:6px">这份一共 '+pl.whole+' g / '+f.k+' kcal。按你每次约 '+pl.budget+' kcal 的额度,吃到 '+maxG+' g 就停(约整份的 '+ratio+'%)。'+
           (maxG<pl.whole?'剩下的收起来,别放在手边。':'整份吃完也在额度内,别再加第二份。')+'</div>');
-    card4='<div class="card" style="border-color:var(--ac)"><h2>能吃多少</h2>'+verdict+
+    var naH='';
+    if(f.na>0){
+      var high=f.na>=600;
+      naH='<div class="tiny" style="margin-top:8px;color:'+(high?'var(--warn)':'var(--tx3)')+'">'+
+        '钠 '+f.na+' mg/100g'+(high?' · 偏高,加工零食和重口味菜常见,吃多了口渴水肿,别常吃':' · 不算高')+'</div>';
+    }
+    card4='<div class="card" style="border-color:var(--ac)"><h2>能吃多少</h2>'+verdict+naH+
       '<div class="tiny" style="margin-top:10px">每 100g 约 '+Math.round(f.per100)+' kcal · 这个数按包装标签算,比估算准。额度可在复盘页改。</div></div>';
   }
 
